@@ -1,6 +1,6 @@
 import Head from 'next/head';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import type { Field, Language, Message, PublicSession } from '../../../../../packages/types/src/conversation.ts';
+import type { Field, Language, Message, PublicSession } from '../../../../packages/types/src/conversation.ts';
 import { KaiMascot } from './KaiMascot';
 import { useVoice } from '../hooks/useVoice';
 
@@ -79,7 +79,7 @@ export default function Chat() {
     <Head><title>KAI · Tu copiloto de inversión</title><meta name="description" content="Habla con KAI y explora tus primeros pasos de inversión en una simulación." /></Head>
     <header className="border-b border-white/10 px-5 py-5"><div className="mx-auto flex max-w-6xl items-center justify-between gap-4">
       <a href="/" className="text-xl font-semibold tracking-tight">imagin <span className="ml-2 text-emerald-300">/ KAI</span></a>
-      <div className="flex items-center gap-3"><span className="hidden text-xs text-slate-400 sm:block">{en ? 'Investment copilot' : 'Tu copiloto de inversión'}</span><label className="sr-only" htmlFor="language">Idioma / Language</label><select id="language" value={language} disabled={busy} onChange={event => { voice.stop(); setLanguage(event.target.value as Language); }} className="rounded-lg border border-white/15 bg-slate-900 px-2 py-2 text-sm"><option value="es">ES</option><option value="en">EN</option></select></div>
+      <div className="flex items-center gap-3"><a href="/community" className="text-xs text-emerald-200 hover:underline">Comunidad</a><span className="hidden text-xs text-slate-400 sm:block">{en ? 'Investment copilot' : 'Tu copiloto de inversión'}</span><label className="sr-only" htmlFor="language">Idioma / Language</label><select id="language" value={language} disabled={busy} onChange={event => { voice.stop(); setLanguage(event.target.value as Language); }} className="rounded-lg border border-white/15 bg-slate-900 px-2 py-2 text-sm"><option value="es">ES</option><option value="en">EN</option></select></div>
     </div></header>
     <main className="mx-auto max-w-6xl px-4 py-5 md:px-6">
       <p className="mb-5 rounded-xl border border-amber-300/15 bg-amber-300/5 px-4 py-3 text-xs leading-relaxed text-amber-100/90">{en ? 'GUIDED DEMO · No external AI provider connected. Conversation uses a limited interpreter. No live market data or real transactions.' : 'DEMO GUIADA · Sin proveedor de IA externo conectado. La conversación usa un intérprete limitado. Sin datos de mercado en directo ni operaciones reales.'}</p>

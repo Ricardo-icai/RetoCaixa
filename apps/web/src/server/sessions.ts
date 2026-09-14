@@ -7,7 +7,13 @@ import type { Language, PublicSession, Session, Trace } from '../../../../packag
 export type Entry = { session: Session; csrfToken: string; traces: Trace[]; provider: Trace['provider']; busy: boolean; requests: number[] };
 const globalSessions = globalThis as typeof globalThis & { kaiSessions?: Map<string, Entry> };
 const sessions = globalSessions.kaiSessions ??= new Map<string, Entry>();
-export class HttpError extends Error { constructor(public status: number, message: string) { super(message); } }
+export class HttpError extends Error {
+  status: number;
+  constructor(status: number, message: string) {
+    super(message);
+    this.status = status;
+  }
+}
 
 export function getSession(id?: string, language: Language = 'es'): Entry {
   const now = Date.now();
