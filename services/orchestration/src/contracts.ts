@@ -1,0 +1,36 @@
+export type Language = 'es' | 'en';
+export type Profile = {
+  goal?: string;
+  horizonMonths?: number;
+  monthlyIncome?: number;
+  essentialExpenses?: number;
+  monthlyDebtPayments?: number;
+  nearTermCommitments?: number;
+  emergencySavings?: number;
+  monthlyContribution?: number;
+  highCostDebt?: boolean;
+  stableIncome?: boolean;
+  riskTolerance?: 'low' | 'medium' | 'high';
+  experience?: 'beginner' | 'some' | 'experienced';
+  portfolio?: 'none' | 'diversified' | 'concentrated';
+};
+export type Field = keyof Profile;
+export type Intent = 'profile' | 'advice' | 'education' | 'market' | 'panic' | 'fomo' | 'human';
+export type Action = 'INVEST' | 'KEEP' | 'WAIT' | 'REDUCE' | 'REBALANCE' | 'LEARN' | 'ASK_CLARIFICATION' | 'PROTECT';
+export type Message = { id: string; role: 'user' | 'assistant'; text: string; timestamp: string; advice?: Advice };
+export type Advice = { action: Action; reasons: string[]; risk: string; amount?: number; annualCostPercent?: number; label: string };
+export type Session = {
+  id: string;
+  language: Language;
+  profile: Profile;
+  provenance: Partial<Record<Field, { source: 'user'; updatedAt: string }>>;
+  pending?: Field;
+  messages: Message[];
+  updatedAt: number;
+};
+export type Extraction = { facts: Profile; intent: Intent; topic?: string; uncertain?: boolean };
+export type AgentId = 'voice-language' | 'profile' | 'goals' | 'behavioural' | 'financial-capacity' | 'risk' | 'compliance' | 'data-quality' | 'market-intelligence' | 'news-events' | 'quantitative' | 'portfolio-product' | 'decision-engine' | 'experience-education';
+export type AgentRun = { id: AgentId; status: 'ok' | 'blocked' | 'unavailable'; durationMs: number; output: unknown };
+export type Trace = { id: string; timestamp: string; runs: AgentRun[]; action: Action; provider: 'gemini' | 'demo' | 'fallback' };
+export type Turn = { session: Session; trace: Trace; provider: Trace['provider'] };
+export type PublicSession = { messages: Message[]; profile: Profile; pending?: Field; language: Language; provider: Trace['provider']; demo: true };
