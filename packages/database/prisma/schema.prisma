@@ -1,0 +1,138 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum KycStatus {
+  UNVERIFIED
+  PENDING
+  VERIFIED
+  REJECTED
+}
+
+enum ProfileVisibility {
+  PUBLIC
+  PRIVATE
+}
+
+enum PostKind {
+  DEBATE
+  LESSON
+  MOVEMENT
+  FREE_ADVICE
+}
+
+enum InvestmentGoal {
+  LEARN
+  MANAGE_MONEY
+  BUILD_BUFFER
+  LONG_TERM
+  FOLLOW_INVESTORS
+}
+
+model User {
+  id                   String            @id @default(uuid())
+  username             String            @unique
+  email                String            @unique
+  isIdentityVerified   Boolean           @default(false)
+  kycStatus            KycStatus         @default(UNVERIFIED)
+  kycDocumentType      String?
+  countryCode          String?
+  visibility           ProfileVisibility @default(PRIVATE)
+  paperBalance         Decimal           @default(10000.00) @db.Decimal(18, 2)
+  verifiedYtdReturn    Decimal?          @db.Decimal(9, 4)
+  returnVerifiedAt     DateTime?
+  returnVerifiedSource String?
+  createdAt            DateTime          @default(now())
+  updatedAt            DateTime          @updatedAt
+  consents             LegalConsent[]
+  preferences          UserPreference[]
+  posts                Post[]
+  comments             Comment[]
+  following            Follow[]          @relation("Follower")
+  followers            Follow[]          @relation("Following")
+  creatorProfile       CreatorProfile?
+}
+
+model LegalConsent {
+  id                     String   @id @default(uuid())
+  userId                 String
+  termsVersion           String
+  privacyVersion         String
+  riskDisclaimerVersion  String
+  acceptedTermsAt        DateTime
+  acceptedBiometricAt    DateTime
+  acceptedRiskAt         DateTime
+  ipAddressAtConsent     String
+  userAgentAtConsent     String?
+  user                    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, acceptedTermsAt])
+}
+
+model UserPreference {
+  id        String         @id @default(uuid())
+  userId    String
+  goal      InvestmentGoal
+  createdAt DateTime       @default(now())
+  user      User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, goal])
+}
+
+model CreatorProfile {
+  userId              String   @id
+  bio                 String
+  focus               String
+  credentialsReviewed Boolean  @default(false)
+  movementDisclosure  String
+  user                User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Follow {
+  followerId  String
+  followingId String
+  createdAt   DateTime @default(now())
+  follower    User     @relation("Follower", fields: [followerId], references: [id], onDelete: Cascade)
+  following   User     @relation("Following", fields: [followingId], references: [id], onDelete: Cascade)
+
+  @@id([followerId, followingId])
+  @@index([followingId])
+}
+
+model Post {
+  id             String    @id @default(uuid())
+  authorId       String
+  kind           PostKind
+  topic          String
+  title          String
+  body           String
+  mediaUrl       String?
+  isPaperTrade   Boolean   @default(false)
+  assetSymbol    String?
+  paperAmount    Decimal?  @db.Decimal(18, 2)
+  disclosure     String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  author         User      @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  comments       Comment[]
+
+  @@index([authorId, createdAt])
+  @@index([topic, createdAt])
+}
+
+model Comment {
+  id        String   @id @default(uuid())
+  postId    String
+  authorId  String
+  body      String
+  createdAt DateTime @default(now())
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  author    User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  @@index([postId, createdAt])
+}

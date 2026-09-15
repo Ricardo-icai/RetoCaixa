@@ -9,7 +9,7 @@ npm install
 npm run dev
 ```
 
-Abrir http://127.0.0.1:3000, que lleva a `/community`. Los visitantes pueden publicar debates y microlecciones, responder y marcar contenido útil. `/channels` muestra perfiles ficticios de ejemplo con movimientos simulados y consejos educativos gratuitos; seguir un canal reúne sus publicaciones en el filtro «Siguiendo». `/simulator` conserva los controles de inversión y protección; la inversión requiere confirmación y solo actualiza el saldo simulado de la página. `/chat` ofrece una conversación guiada con perfil y aportaciones simuladas en memoria del servidor.
+Abrir http://127.0.0.1:3000. El onboarding de `/verify-identity` recoge los objetivos del inversor, la visibilidad y los tres consentimientos, y simula el cambio KYC de `PENDING` a `VERIFIED` sin capturar documentos ni biometría. Después, `/community` prioriza el feed «Para ti» según esos objetivos. Los visitantes verificados pueden publicar debates y microlecciones, responder y marcar contenido útil. `/channels` muestra perfiles ficticios de ejemplo con movimientos simulados y consejos educativos gratuitos; seguir un canal reúne sus publicaciones en «Siguiendo». `/simulator` conserva los controles de inversión y protección, y `/chat` ofrece una conversación guiada con KAI.
 
 ## Verificar
 
@@ -17,8 +17,9 @@ Abrir http://127.0.0.1:3000, que lleva a `/community`. Los visitantes pueden pub
 npm run build
 npm --prefix apps/web run typecheck
 node --experimental-strip-types --test tests/*.test.mjs
+DATABASE_URL='postgresql://user:password@localhost:5432/stoxia' npm --prefix packages/database run validate
 ```
 
 ## Alcance
 
-Los documentos originales están en docs/. Esta demo no implementa todavía la especificación completa. No hay conexión bancaria, feeds de mercado reales, proveedor de IA externo, autenticación ni persistencia. El chat usa un intérprete local limitado y una orquestación determinista; las funciones de voz dependen de las API y los permisos del navegador. Las publicaciones iniciales de la comunidad y todos los canales están marcados como ejemplos. No se atribuyen movimientos ni consejos a inversores reales. Las publicaciones y suscripciones de visitantes se guardan en la memoria del servidor y desaparecen al reiniciarlo; no hay cuentas, verificación de creadores, avisos externos ni moderación. No se debe desplegar la comunidad como red pública sin esos controles y almacenamiento persistente. Las noticias son ejemplos y están etiquetadas. Los límites del motor son ilustrativos y no constituyen una evaluación completa de idoneidad. El coste mostrado es un ejemplo, no una tarifa real.
+Los documentos originales están en docs/. El esquema preparado para PostgreSQL está en `packages/database/prisma/schema.prisma`, pero la demo web todavía usa memoria del servidor: no hay autenticación ni persistencia conectada. Tampoco hay conexión bancaria, feeds de mercado reales o proveedor de IA externo. La verificación documental es solo una transición simulada de estado; no acredita identidades reales. Las publicaciones iniciales y todos los canales están marcados como ejemplos, sin atribuir movimientos ni consejos a inversores reales. Una red pública necesitaría conectar Prisma, un proveedor KYC autorizado, verificación de creadores, moderación, avisos y controles regulatorios. El chat usa un intérprete local limitado y una orquestación determinista; la voz depende del navegador. Los límites del motor son ilustrativos y no constituyen una evaluación completa de idoneidad.

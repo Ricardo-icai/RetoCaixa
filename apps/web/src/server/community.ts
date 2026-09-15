@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { communityTopics, type CommunitySnapshot, type CommunityTopic, type CreatorChannel, type PostKind } from '../community/types.ts';
+import { communityTopics, investorGoals, type CommunitySnapshot, type CommunityTopic, type CreatorChannel, type InvestorGoal, type KycStatus, type PostKind } from '../community/types.ts';
 
 type ReplyRecord = { id: string; owner: string; author: string; text: string; createdAt: string };
 type PostRecord = {
@@ -7,13 +7,17 @@ type PostRecord = {
   title: string; text: string; createdAt: string; demo: boolean; channelId?: string;
   helpfulBy: Set<string>; replies: ReplyRecord[];
 };
-type Viewer = { id: string; label: string; csrfToken: string; actions: number[]; subscriptions: Set<string> };
+type Viewer = {
+  id: string; label: string; csrfToken: string; actions: number[]; subscriptions: Set<string>;
+  kycStatus: KycStatus; identityVerified: boolean; visibility: 'PUBLIC' | 'PRIVATE';
+  countryCode?: string; goals: InvestorGoal[]; consentedAt?: string; consentIp?: string; consentUserAgent?: string;
+};
 type Store = { viewers: Map<string, Viewer>; posts: PostRecord[] };
 
 const channels: Omit<CreatorChannel, 'subscribed' | 'subscriberCount'>[] = [
-  { id: 'nora-vega', name: 'Nora Vega', focus: 'Inversión a largo plazo', bio: 'Perfil ficticio de ejemplo. Comparte cómo piensa sobre diversificación, costes y horizonte temporal.', demo: true },
-  { id: 'leo-solis', name: 'Leo Solís', focus: 'Gestión del dinero', bio: 'Perfil ficticio de ejemplo. Habla de presupuesto, colchón de emergencia y hábitos financieros.', demo: true },
-  { id: 'alma-rios', name: 'Alma Ríos', focus: 'Riesgo y comportamiento', bio: 'Perfil ficticio de ejemplo. Explora cómo tomar decisiones sin seguir el ruido del mercado.', demo: true },
+  { id: 'nora-vega', name: 'Nora Vega', focus: 'Inversión a largo plazo', bio: 'Perfil ficticio de ejemplo. Comparte cómo piensa sobre diversificación, costes y horizonte temporal.', demo: true, identityVerified: false },
+  { id: 'leo-solis', name: 'Leo Solís', focus: 'Gestión del dinero', bio: 'Perfil ficticio de ejemplo. Habla de presupuesto, colchón de emergencia y hábitos financieros.', demo: true, identityVerified: false },
+  { id: 'alma-rios', name: 'Alma Ríos', focus: 'Riesgo y comportamiento', bio: 'Perfil ficticio de ejemplo. Explora cómo tomar decisiones sin seguir el ruido del mercado.', demo: true, identityVerified: false },
 ];
 
 const globalCommunity = globalThis as typeof globalThis & { kaiCommunity?: Store };
@@ -50,21 +54,43 @@ export function getViewer(id?: string): Viewer {
   if (id && store.viewers.has(id)) {
     const viewer = store.viewers.get(id)!;
     viewer.subscriptions ??= new Set();
+    viewer.kycStatus ??= 'UNVERIFIED';
+    viewer.identityVerified ??= false;
+    viewer.visibility ??= 'PRIVATE';
+    viewer.goals ??= [];
     return viewer;
   }
   if (store.viewers.size >= 5000) throw new CommunityError(503, 'La comunidad está ocupada. Vuelve a intentarlo más tarde.');
   const viewerId = randomUUID();
-  const viewer = { id: viewerId, label: `Participante #${viewerId.slice(0, 4).toUpperCase()}`, csrfToken: randomUUID(), actions: [], subscriptions: new Set<string>() };
+  const viewer: Viewer = { id: viewerId, label: `Participante #${viewerId.slice(0, 4).toUpperCase()}`, csrfToken: randomUUID(), actions: [], subscriptions: new Set<string>(), kycStatus: 'UNVERIFIED', identityVerified: false, visibility: 'PRIVATE', goals: [] };
   store.viewers.set(viewerId, viewer);
   return viewer;
 }
 
+export function hasCompletedOnboarding(id?: string): boolean {
+  if (!id || !store.viewers.has(id)) return false;
+  const viewer = store.viewers.get(id)!;
+  return viewer.kycStatus === 'VERIFIED' && !!viewer.consentedAt && viewer.goals.length > 0;
+}
+
 export function communitySnapshot(viewer: Viewer): CommunitySnapshot {
+  const preferredTopics = new Set<CommunityTopic>();
+  for (const goal of viewer.goals) {
+    if (goal === 'Gestionar mi dinero' || goal === 'Crear mi colchón') preferredTopics.add('Gestionar dinero');
+    if (goal === 'Aprender a invertir') preferredTopics.add('Primeros pasos');
+    if (goal === 'Invertir a largo plazo') preferredTopics.add('Fondos');
+  }
+  const personalizedPosts = [...store.posts].sort((a, b) => {
+    const aScore = (a.channelId && viewer.subscriptions.has(a.channelId) ? 2 : 0) + (preferredTopics.has(a.topic) ? 1 : 0);
+    const bScore = (b.channelId && viewer.subscriptions.has(b.channelId) ? 2 : 0) + (preferredTopics.has(b.topic) ? 1 : 0);
+    return bScore - aScore || Date.parse(b.createdAt) - Date.parse(a.createdAt);
+  });
   return {
     viewer: viewer.label,
     csrfToken: viewer.csrfToken,
+    onboarding: { completed: viewer.kycStatus === 'VERIFIED' && !!viewer.consentedAt && viewer.goals.length > 0, kycStatus: viewer.kycStatus, identityVerified: viewer.identityVerified, visibility: viewer.visibility, countryCode: viewer.countryCode, goals: viewer.goals, consentedAt: viewer.consentedAt },
     channels: channels.map(channel => ({ ...channel, subscribed: viewer.subscriptions.has(channel.id), subscriberCount: [...store.viewers.values()].filter(item => item.subscriptions?.has(channel.id)).length })),
-    posts: store.posts.map(post => ({
+    posts: personalizedPosts.map(post => ({
       id: post.id, kind: post.kind, topic: post.topic, title: post.title, text: post.text,
       author: post.author, channelId: post.channelId, createdAt: post.createdAt, demo: post.demo,
       mine: post.owner === viewer.id, helpful: post.helpfulBy.has(viewer.id),
@@ -88,6 +114,7 @@ export function mutateCommunity(viewer: Viewer, body: Record<string, unknown>): 
   viewer.actions.push(now);
 
   if (body.operation === 'publish') {
+    if (viewer.kycStatus !== 'VERIFIED') throw new CommunityError(403, 'Completa la verificación de identidad antes de publicar.');
     if (body.kind !== 'debate' && body.kind !== 'leccion') throw new CommunityError(400, 'Elige debate o microlección.');
     if (!communityTopics.includes(body.topic as CommunityTopic)) throw new CommunityError(400, 'Elige un tema válido.');
     const title = textField(body.title, 6, 100, 'Título');
@@ -95,6 +122,7 @@ export function mutateCommunity(viewer: Viewer, body: Record<string, unknown>): 
     store.posts.unshift({ id: randomUUID(), owner: viewer.id, author: viewer.label, kind: body.kind, topic: body.topic as CommunityTopic, title, text, createdAt: new Date(now).toISOString(), demo: false, helpfulBy: new Set(), replies: [] });
     store.posts.splice(200);
   } else if (body.operation === 'reply') {
+    if (viewer.kycStatus !== 'VERIFIED') throw new CommunityError(403, 'Completa la verificación de identidad antes de responder.');
     const post = store.posts.find(item => item.id === body.postId);
     if (!post) throw new CommunityError(404, 'La publicación ya no está disponible.');
     if (post.replies.length >= 50) throw new CommunityError(409, 'Este debate ha llegado al límite de respuestas de la demo.');
@@ -121,6 +149,23 @@ export function mutateCommunity(viewer: Viewer, body: Record<string, unknown>): 
     if (typeof body.channelId !== 'string' || !channels.some(channel => channel.id === body.channelId)) throw new CommunityError(404, 'Ese canal no está disponible.');
     if (viewer.subscriptions.has(body.channelId)) viewer.subscriptions.delete(body.channelId);
     else viewer.subscriptions.add(body.channelId);
+  } else if (body.operation === 'completeOnboarding') {
+    if (body.acceptTerms !== true || body.acceptBiometric !== true || body.acceptRisk !== true) throw new CommunityError(400, 'Debes aceptar los tres consentimientos para continuar.');
+    if (body.visibility !== 'PUBLIC' && body.visibility !== 'PRIVATE') throw new CommunityError(400, 'Elige la visibilidad de tu perfil.');
+    if (typeof body.countryCode !== 'string' || !/^[A-Z]{2}$/.test(body.countryCode)) throw new CommunityError(400, 'Selecciona un país válido.');
+    if (!Array.isArray(body.goals) || body.goals.length === 0 || body.goals.some(goal => !investorGoals.includes(goal as InvestorGoal))) throw new CommunityError(400, 'Elige al menos un objetivo válido.');
+    viewer.visibility = body.visibility;
+    viewer.countryCode = body.countryCode;
+    viewer.goals = [...new Set(body.goals as InvestorGoal[])];
+    viewer.consentedAt = new Date(now).toISOString();
+    viewer.consentIp = typeof body.consentIp === 'string' ? body.consentIp : 'unknown';
+    viewer.consentUserAgent = typeof body.consentUserAgent === 'string' ? body.consentUserAgent.slice(0, 300) : undefined;
+    viewer.kycStatus = 'PENDING';
+    viewer.identityVerified = false;
+  } else if (body.operation === 'verifyIdentityDemo') {
+    if (!viewer.consentedAt || viewer.goals.length === 0) throw new CommunityError(409, 'Completa primero los consentimientos y tus objetivos.');
+    viewer.kycStatus = 'VERIFIED';
+    viewer.identityVerified = true;
   } else {
     throw new CommunityError(400, 'Operación no válida.');
   }

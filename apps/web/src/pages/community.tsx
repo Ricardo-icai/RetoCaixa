@@ -2,13 +2,13 @@ import Head from 'next/head';
 import { useEffect, useMemo, useState } from 'react';
 import { communityTopics, type CommunityPost, type CommunitySnapshot, type CommunityTopic, type PostKind } from '../community/types';
 
-type FeedFilter = 'Todos' | 'Siguiendo' | CommunityTopic;
+type FeedFilter = 'Para ti' | 'Siguiendo' | CommunityTopic;
 const dateLabel = (value: string) => new Intl.DateTimeFormat('es-ES', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }).format(new Date(value));
 const kindLabel: Record<PostKind, string> = { debate: 'Debate', leccion: 'Microlección', movimiento: 'Movimiento simulado', consejo: 'Consejo gratis' };
 
 export default function Community() {
   const [snapshot, setSnapshot] = useState<CommunitySnapshot | null>(null);
-  const [filter, setFilter] = useState<FeedFilter>('Todos');
+  const [filter, setFilter] = useState<FeedFilter>('Para ti');
   const [kind, setKind] = useState<PostKind>('debate');
   const [composerOpen, setComposerOpen] = useState(false);
   const [topic, setTopic] = useState<CommunityTopic>('Primeros pasos');
@@ -60,7 +60,7 @@ export default function Community() {
     }
   }
 
-  const posts = useMemo(() => snapshot?.posts.filter(post => filter === 'Todos' || (filter === 'Siguiendo' ? snapshot.channels.some(channel => channel.id === post.channelId && channel.subscribed) : post.topic === filter)) ?? [], [snapshot, filter]);
+  const posts = useMemo(() => snapshot?.posts.filter(post => filter === 'Para ti' || (filter === 'Siguiendo' ? snapshot.channels.some(channel => channel.id === post.channelId && channel.subscribed) : post.topic === filter)) ?? [], [snapshot, filter]);
   const debateCount = snapshot?.posts.filter(post => post.kind === 'debate').length ?? 0;
 
   async function publish(event: React.FormEvent) {
@@ -68,7 +68,7 @@ export default function Community() {
     if (await act({ operation: 'publish', kind, topic, title, text }, 'Publicación compartida con la comunidad.')) {
       setTitle('');
       setText('');
-      setFilter('Todos');
+      setFilter('Para ti');
       setComposerOpen(false);
     }
   }
@@ -86,7 +86,7 @@ export default function Community() {
     <header className="border-b border-white/10 bg-[#0d1723]/95 px-5 py-4">
       <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-4">
         <a href="/community" className="text-xl font-semibold tracking-tight">imagin <span className="text-emerald-300">/ KAI</span></a>
-        <nav aria-label="Navegación principal" className="flex items-center gap-2 text-sm">
+        <nav aria-label="Navegación principal" className="hidden items-center gap-2 text-sm sm:flex">
           <a href="/simulator" className="rounded-full px-3 py-2 text-slate-300 hover:bg-white/5">Simulador</a>
           <a href="/community" aria-current="page" className="rounded-full bg-emerald-300/15 px-3 py-2 font-semibold text-emerald-200">Comunidad</a>
           <a href="/channels" className="rounded-full px-3 py-2 text-slate-300 hover:bg-white/5">Canales</a>
@@ -107,11 +107,12 @@ export default function Community() {
       </section>
 
       <p className="mt-5 rounded-xl border border-amber-300/15 bg-amber-300/5 px-4 py-3 text-xs leading-6 text-amber-100">Demo compartida y temporal: las publicaciones nuevas son visibles para otros visitantes hasta que se reinicie el servidor. Los canales de inversores son personajes ficticios; sus movimientos no son operaciones reales. No compartas datos personales ni tomes una decisión financiera por una publicación.</p>
+      {snapshot && !snapshot.onboarding.completed && <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-cyan-300/20 bg-cyan-300/5 px-4 py-3"><p className="text-xs leading-6 text-cyan-100">Puedes explorar el feed. Para publicar, completa tus objetivos, consentimientos y la verificación simulada.</p><a href="/verify-identity" className="rounded-lg bg-cyan-200 px-4 py-2 text-xs font-semibold text-slate-950">Configurar mi perfil ↗</a></div>}
 
       <div className="mt-7 grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_280px]">
         <div className="space-y-6">
           <section className="rounded-3xl border border-white/10 bg-[#101d2a] p-5 sm:p-6" aria-labelledby="compose-title">
-            <div className="flex flex-wrap items-center justify-between gap-3"><div><p className="text-xs font-medium text-emerald-200">Tu espacio · {snapshot?.viewer ?? 'Invitado'}</p><h2 id="compose-title" className="mt-1 text-xl font-semibold">¿Qué te gustaría debatir?</h2><p className="mt-1 text-xs text-slate-400">Una pregunta puede abrir muchas perspectivas.</p></div><button type="button" onClick={() => setComposerOpen(value => !value)} aria-expanded={composerOpen} aria-controls="community-composer" className="rounded-xl bg-emerald-300 px-4 py-3 text-sm font-semibold text-slate-950">{composerOpen ? 'Cerrar' : 'Abrir debate'} ↗</button></div>
+            <div className="flex flex-wrap items-center justify-between gap-3"><div><p className="text-xs font-medium text-emerald-200">Tu espacio · {snapshot?.viewer ?? 'Invitado'}</p><h2 id="compose-title" className="mt-1 text-xl font-semibold">¿Qué te gustaría debatir?</h2><p className="mt-1 text-xs text-slate-400">Una pregunta puede abrir muchas perspectivas.</p></div>{snapshot?.onboarding.completed ? <button type="button" onClick={() => setComposerOpen(value => !value)} aria-expanded={composerOpen} aria-controls="community-composer" className="rounded-xl bg-emerald-300 px-4 py-3 text-sm font-semibold text-slate-950">{composerOpen ? 'Cerrar' : 'Abrir debate'} ↗</button> : <a href="/verify-identity" className="rounded-xl bg-emerald-300 px-4 py-3 text-sm font-semibold text-slate-950">Verificar para publicar ↗</a>}</div>
             {composerOpen && <form id="community-composer" onSubmit={publish} className="mt-6 space-y-4 border-t border-white/10 pt-5">
               <div className="flex flex-wrap gap-2" role="group" aria-label="Formato de publicación">
                 {(['debate', 'leccion'] as const).map(item => <button key={item} type="button" onClick={() => setKind(item)} aria-pressed={kind === item} className={`rounded-full px-4 py-2 text-xs font-semibold ${kind === item ? 'bg-emerald-300 text-slate-950' : 'border border-white/15 text-slate-300 hover:border-emerald-300/50'}`}>{item === 'debate' ? 'Debate' : 'Microlección'}</button>)}
@@ -133,7 +134,7 @@ export default function Community() {
 
           <section aria-labelledby="feed-title">
             <div className="mb-4 flex flex-wrap items-center justify-between gap-3"><div><p className="text-xs font-medium text-emerald-200">El feed</p><h2 id="feed-title" className="mt-1 text-2xl font-semibold">Conversaciones abiertas</h2></div><button onClick={() => void load().catch(cause => setError(cause.message))} className="rounded-full border border-white/15 px-4 py-2 text-xs text-slate-300 hover:border-emerald-300">Actualizar</button></div>
-            <div className="mb-5 flex gap-2 overflow-x-auto pb-1" aria-label="Filtrar publicaciones">{(['Todos', 'Siguiendo', ...communityTopics] as FeedFilter[]).map(item => <button key={item} onClick={() => setFilter(item)} aria-pressed={filter === item} className={`shrink-0 rounded-full px-4 py-2 text-xs ${filter === item ? 'bg-white text-slate-950' : 'border border-white/15 text-slate-300 hover:border-white/40'}`}>{item}</button>)}</div>
+            <div className="mb-5 flex gap-2 overflow-x-auto pb-1" aria-label="Filtrar publicaciones">{(['Para ti', 'Siguiendo', ...communityTopics] as FeedFilter[]).map(item => <button key={item} onClick={() => setFilter(item)} aria-pressed={filter === item} className={`shrink-0 rounded-full px-4 py-2 text-xs ${filter === item ? 'bg-white text-slate-950' : 'border border-white/15 text-slate-300 hover:border-white/40'}`}>{item}</button>)}</div>
             {!snapshot && !error && <p className="rounded-2xl border border-white/10 p-8 text-sm text-slate-400">Cargando conversaciones…</p>}
             {snapshot && posts.length === 0 && <p className="rounded-2xl border border-white/10 p-8 text-sm text-slate-400">{filter === 'Siguiendo' ? 'Sigue un canal gratuito para reunir aquí sus publicaciones.' : 'Aún no hay publicaciones sobre este tema. Puedes abrir la primera conversación.'}</p>}
             <div className="space-y-4">{posts.map(post => <article id={`post-${post.id}`} key={post.id} className="rounded-3xl border border-white/10 bg-[#101d2a] p-5 sm:p-6">

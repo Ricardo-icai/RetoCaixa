@@ -1,5 +1,7 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+html { color-scheme: dark; background: #020617; }
+body { margin: 0; background: #020617; color: #f1f5f9; }
 :focus-visible { outline: 2px solid #34d399; outline-offset: 4px; }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }

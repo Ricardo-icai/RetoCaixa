@@ -24,12 +24,15 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
     if (req.method === 'POST') {
       if (req.headers['x-csrf-token'] !== viewer.csrfToken) throw new CommunityError(403, 'Actualiza la página antes de continuar.');
       if (!req.body || typeof req.body !== 'object' || Array.isArray(req.body)) throw new CommunityError(400, 'Solicitud no válida.');
-      const allowed = ['operation', 'kind', 'topic', 'title', 'text', 'postId', 'replyId', 'channelId'];
+      const allowed = ['operation', 'kind', 'topic', 'title', 'text', 'postId', 'replyId', 'channelId', 'acceptTerms', 'acceptBiometric', 'acceptRisk', 'visibility', 'countryCode', 'goals'];
       if (Object.keys(req.body).some(key => !allowed.includes(key))) throw new CommunityError(400, 'La solicitud incluye campos no permitidos.');
     }
     const secure = req.headers['x-forwarded-proto'] === 'https' ? '; Secure' : '';
     res.setHeader('Set-Cookie', `kai_community=${viewer.id}; HttpOnly; SameSite=Strict; Path=/; Max-Age=86400${secure}`);
-    return res.status(200).json(req.method === 'POST' ? mutateCommunity(viewer, req.body) : communitySnapshot(viewer));
+    const mutation = req.method === 'POST'
+      ? { ...req.body, consentIp: (req.headers['x-forwarded-for'] as string | undefined)?.split(',')[0].trim() ?? req.socket.remoteAddress ?? 'unknown', consentUserAgent: req.headers['user-agent'] }
+      : null;
+    return res.status(200).json(mutation ? mutateCommunity(viewer, mutation) : communitySnapshot(viewer));
   } catch (error) {
     if (error instanceof CommunityError) return res.status(error.status).json({ error: error.message });
     return res.status(500).json({ error: 'No se ha podido cargar la comunidad. Vuelve a intentarlo.' });
