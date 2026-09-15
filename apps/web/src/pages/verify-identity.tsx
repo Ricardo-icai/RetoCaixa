@@ -1,6 +1,7 @@
 import Head from 'next/head';
 import { useEffect, useState } from 'react';
 import { investorGoals, type CommunitySnapshot, type InvestorGoal } from '../community/types';
+import { KaiHeaderIcon } from '../components/KaiHeaderIcon';
 
 export default function VerifyIdentity() {
   const [snapshot, setSnapshot] = useState<CommunitySnapshot | null>(null);
@@ -60,7 +61,7 @@ export default function VerifyIdentity() {
 
   return <div className="min-h-screen bg-[#08111b] text-slate-100">
     <Head><title>Configura tu experiencia · KAI</title></Head>
-    <header className="border-b border-white/10 px-5 py-4"><div className="mx-auto max-w-5xl text-xl font-semibold">imagin <span className="text-emerald-300">/ KAI</span></div></header>
+    <header className="border-b border-white/10 px-5 py-3"><div className="mx-auto max-w-5xl"><KaiHeaderIcon /></div></header>
     <main className="mx-auto max-w-5xl px-4 py-8 sm:px-6">
       <div className="grid gap-6 lg:grid-cols-[0.8fr_1.2fr]">
         <section className="rounded-3xl border border-emerald-300/15 bg-gradient-to-br from-[#173b3a] to-[#132033] p-7"><h1 className="text-3xl font-semibold leading-tight">Configura tu experiencia</h1><ol className="mt-8 space-y-4 text-sm"><li className={step === 'profile' ? 'text-emerald-200' : 'text-slate-400'}>01 · Objetivos</li><li className={step === 'scan' ? 'text-emerald-200' : 'text-slate-400'}>02 · Verificación</li><li className={step === 'done' ? 'text-emerald-200' : 'text-slate-400'}>03 · Feed</li></ol></section>

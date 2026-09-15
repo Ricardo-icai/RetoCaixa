@@ -1,6 +1,7 @@
 import Head from 'next/head';
 import { useEffect, useMemo, useState } from 'react';
 import { communityTopics, type CommunityPost, type CommunitySnapshot, type CommunityTopic, type PostKind } from '../community/types';
+import { KaiHeaderIcon } from '../components/KaiHeaderIcon';
 
 type FeedFilter = 'Para ti' | 'Siguiendo' | CommunityTopic;
 const dateLabel = (value: string) => new Intl.DateTimeFormat('es-ES', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }).format(new Date(value));
@@ -82,7 +83,7 @@ export default function Community() {
   return <div className="min-h-screen bg-[#0a111b] text-slate-100">
     <Head><title>Comunidad KAI · Aprender a invertir juntos</title><meta name="description" content="Debates y microlecciones de inversión en la comunidad demo de KAI." /></Head>
     <header className="border-b border-white/10 bg-[#0d1723]/95 px-5 py-4">
-      <div className="mx-auto max-w-7xl text-xl font-semibold tracking-tight">imagin <span className="text-emerald-300">/ KAI</span></div>
+      <div className="mx-auto max-w-7xl"><KaiHeaderIcon /></div>
     </header>
 
     <main className="mx-auto max-w-7xl px-4 pb-16 pt-7 sm:px-6">

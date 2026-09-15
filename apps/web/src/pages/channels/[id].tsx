@@ -2,6 +2,7 @@ import Head from 'next/head';
 import { useRouter } from 'next/router';
 import { useEffect, useState } from 'react';
 import type { CommunitySnapshot, PostKind } from '../../community/types';
+import { KaiHeaderIcon } from '../../components/KaiHeaderIcon';
 
 const label: Record<PostKind, string> = { debate: 'Debate', leccion: 'Microlección', movimiento: 'Movimiento simulado', consejo: 'Consejo gratis' };
 const dateLabel = (value: string) => new Intl.DateTimeFormat('es-ES', { day: 'numeric', month: 'short', year: 'numeric' }).format(new Date(value));
@@ -42,7 +43,7 @@ export default function ChannelPage() {
 
   return <div className="min-h-screen bg-[#0a111b] text-slate-100">
     <Head><title>{channel ? `${channel.name} · Canal de ejemplo` : 'Canal · Comunidad KAI'}</title></Head>
-    <header className="border-b border-white/10 px-5 py-4"><div className="mx-auto max-w-5xl text-xl font-semibold">imagin <span className="text-emerald-300">/ KAI</span></div></header>
+    <header className="border-b border-white/10 px-5 py-3"><div className="mx-auto max-w-5xl"><KaiHeaderIcon /></div></header>
     <main className="mx-auto max-w-5xl px-4 pb-16 pt-8 sm:px-6">
       {error && <p role="alert" className="mb-5 rounded-xl border border-rose-300/20 bg-rose-300/10 p-4 text-sm text-rose-200">{error}</p>}
       {!snapshot && !error && <p className="text-sm text-slate-400">Cargando canal…</p>}
