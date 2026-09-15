@@ -2,9 +2,9 @@ import { randomUUID } from 'node:crypto';
 import { createSession, runTurn } from '../../../../services/orchestration/src/index.ts';
 import { evaluateAgents } from '../../../../services/orchestration/src/agents.ts';
 import { decide } from '../../../../packages/decision-engine/src/profile.ts';
-import type { Language, PublicSession, Session, Trace } from '../../../../packages/types/src/conversation.ts';
+import type { Language, PublicSession, SavedConversation, Session, Trace } from '../../../../packages/types/src/conversation.ts';
 
-export type Entry = { session: Session; csrfToken: string; traces: Trace[]; provider: Trace['provider']; busy: boolean; requests: number[] };
+export type Entry = { session: Session; csrfToken: string; traces: Trace[]; provider: Trace['provider']; busy: boolean; requests: number[]; savedConversations: SavedConversation[] };
 const globalSessions = globalThis as typeof globalThis & { kaiSessions?: Map<string, Entry> };
 const sessions = globalSessions.kaiSessions ??= new Map<string, Entry>();
 export class HttpError extends Error {
@@ -21,13 +21,14 @@ export function getSession(id?: string, language: Language = 'es'): Entry {
   if (id && sessions.has(id)) return sessions.get(id)!;
   if (sessions.size >= 1000) throw new HttpError(503, 'La demo está ocupada. Inténtalo más tarde.');
   const session = createSession(language);
-  const entry: Entry = { session, csrfToken: randomUUID(), traces: [], provider: 'demo', busy: false, requests: [] };
+  const entry: Entry = { session, csrfToken: randomUUID(), traces: [], provider: 'demo', busy: false, requests: [], savedConversations: [] };
   sessions.set(session.id, entry);
   return entry;
 }
 export function publicSession(entry: Entry): PublicSession {
   const { messages, profile, pending, language, revision, simulatedBalance, executedRecommendations } = entry.session;
-  return { messages, profile, pending, language, revision, simulatedBalance, executedRecommendations, provider: entry.provider, demo: true, csrfToken: entry.csrfToken };
+  entry.savedConversations ??= [];
+  return { messages, profile, pending, language, revision, simulatedBalance, executedRecommendations, savedConversations: entry.savedConversations, provider: entry.provider, demo: true, csrfToken: entry.csrfToken };
 }
 
 export async function mutate(entry: Entry, body: Record<string, unknown>) {
@@ -45,6 +46,36 @@ export async function mutate(entry: Entry, body: Record<string, unknown>) {
       entry.session = { ...fresh, id: entry.session.id, revision: entry.session.revision + 1 };
       entry.traces = [];
       entry.provider = 'demo';
+      return;
+    }
+    if (body.operation === 'save') {
+      const title = typeof body.title === 'string' ? body.title.trim() : '';
+      if (!title || title.length > 60) throw new HttpError(400, 'Escribe un título de entre 1 y 60 caracteres.');
+      if (!entry.session.messages.some(message => message.role === 'user')) throw new HttpError(400, 'Escribe al menos un mensaje antes de guardar la conversación.');
+      entry.savedConversations ??= [];
+      if (entry.savedConversations.length >= 10) throw new HttpError(409, 'Puedes guardar hasta 10 conversaciones. Elimina una para continuar.');
+      const savedAt = new Date(now).toISOString();
+      entry.savedConversations.unshift({
+        id: randomUUID(), title, savedAt,
+        createdAt: entry.session.messages[0]?.timestamp ?? savedAt,
+        messages: structuredClone(entry.session.messages),
+        profile: structuredClone(entry.session.profile),
+        simulatedBalance: entry.session.simulatedBalance,
+      });
+      const fresh = createSession(language, now);
+      entry.session = { ...fresh, id: entry.session.id, revision: entry.session.revision + 1 };
+      entry.traces = [];
+      entry.provider = 'demo';
+      return;
+    }
+    if (body.operation === 'deleteSaved') {
+      if (typeof body.savedConversationId !== 'string') throw new HttpError(400, 'Conversación guardada no válida.');
+      entry.savedConversations ??= [];
+      const index = entry.savedConversations.findIndex(conversation => conversation.id === body.savedConversationId);
+      if (index < 0) throw new HttpError(404, 'La conversación guardada no existe.');
+      entry.savedConversations.splice(index, 1);
+      entry.session.revision += 1;
+      entry.session.updatedAt = now;
       return;
     }
     if (body.operation === 'message') {

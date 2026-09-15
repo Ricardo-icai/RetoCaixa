@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import type { AgentRun, Language, Session, Turn } from './contracts.ts';
 import { interpret, type LanguageProvider } from './provider.ts';
-import { updateProfile, evaluateAgents } from './agents.ts';
+import { agentContracts, updateProfile, evaluateAgents } from './agents.ts';
 import { decide } from '../../../packages/decision-engine/src/profile.ts';
 import { explain } from './responses.ts';
 import { greeting, question } from './questions.ts';
@@ -38,6 +38,8 @@ export async function runTurn(previous: Session, text: string, options: { provid
     if (session.pending && !['human', 'market_unavailable'].includes(decision.reason)) reply.text += '\n\n' + question(session.pending, session.language);
   }
   runs.push({ id: 'experience-education', status: 'ok', output: reply, durationMs: 0 });
+  const missingAgents = (Object.keys(agentContracts) as AgentRun['id'][]).filter(id => !runs.some(run => run.id === id));
+  if (missingAgents.length) throw new Error(`Incomplete agent orchestration: ${missingAgents.join(', ')}`);
   session.messages.push({ id: randomUUID(), role: 'user', text, timestamp }, { id: randomUUID(), role: 'assistant', timestamp, ...reply });
   session.messages = session.messages.slice(-80);
   session.updatedAt = now;

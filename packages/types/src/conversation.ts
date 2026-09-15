@@ -31,9 +31,18 @@ export type Session = {
   simulatedBalance: number;
   executedRecommendations: string[];
 };
+export type SavedConversation = {
+  id: string;
+  title: string;
+  createdAt: string;
+  savedAt: string;
+  messages: Message[];
+  profile: Profile;
+  simulatedBalance: number;
+};
 export type Extraction = { facts: Profile; intent: Intent; topic?: string; uncertain?: boolean };
 export type AgentId = 'voice-language' | 'profile' | 'goals' | 'behavioural' | 'financial-capacity' | 'risk' | 'compliance' | 'data-quality' | 'market-intelligence' | 'news-events' | 'quantitative' | 'portfolio-product' | 'decision-engine' | 'experience-education';
 export type AgentRun = { id: AgentId; status: 'ok' | 'blocked' | 'unavailable'; durationMs: number; output: unknown };
 export type Trace = { id: string; timestamp: string; runs: AgentRun[]; action: Action; provider: 'demo' | 'configured' | 'fallback' };
 export type Turn = { session: Session; trace: Trace; provider: Trace['provider'] };
-export type PublicSession = { messages: Message[]; profile: Profile; pending?: Field; language: Language; provider: Trace['provider']; demo: true; revision: number; simulatedBalance: number; executedRecommendations: string[]; csrfToken: string };
+export type PublicSession = { messages: Message[]; profile: Profile; pending?: Field; language: Language; provider: Trace['provider']; demo: true; revision: number; simulatedBalance: number; executedRecommendations: string[]; savedConversations: SavedConversation[]; csrfToken: string };
