@@ -63,20 +63,16 @@ export default function Home() {
         <title>Imagin Copilot — CaixaBank</title>
       </Head>
 
-      <header className="px-6 py-4 flex items-center justify-between border-b border-slate-800 bg-slate-900/60 backdrop-blur-md sticky top-0 z-50">
+      <header className="px-6 py-4 border-b border-slate-800 bg-slate-900/60 backdrop-blur-md sticky top-0 z-40">
         <div className="flex items-center space-x-2">
           <span className="text-xl font-bold bg-gradient-to-r from-cyan-400 to-emerald-400 bg-clip-text text-transparent">imagin</span>
-          <span className="text-xs px-2 py-0.5 rounded-full bg-slate-800 text-slate-400 border border-slate-700 font-mono">COPILOT</span>
+          <span className="text-xs px-2 py-0.5 rounded-full bg-slate-800 text-slate-400 border border-slate-700">KAI</span>
         </div>
-        <nav aria-label="Navegación principal" className="flex items-center gap-2">
-          <a href="/community" className="text-xs text-emerald-200 bg-slate-900 px-3 py-1.5 rounded-full border border-slate-800 hover:border-emerald-300">Comunidad</a>
-          <a href="/chat" className="text-xs text-emerald-200 bg-slate-900 px-3 py-1.5 rounded-full border border-slate-800 hover:border-emerald-300">Hablar con KAI</a>
-        </nav>
       </header>
 
       <main className="max-w-md mx-auto px-4 pt-6 space-y-6">
-        <div className="rounded-xl border border-amber-400/30 bg-amber-400/10 p-3 text-xs text-amber-200">DEMO · Perfil, productos y mercado simulados. Sin conexión bancaria ni operaciones reales.</div>
-        <div className="px-2"><p className="text-sm text-slate-400">Tu inversión simulada en esta sesión</p><p className="text-3xl font-semibold mt-1">€{simulatedBalance.toFixed(2)}</p></div>
+        <div className="rounded-xl border border-amber-400/30 bg-amber-400/10 p-3 text-xs text-amber-200">Simulación sin dinero real.</div>
+        <div className="px-2"><p className="text-sm text-slate-400">Saldo simulado</p><p className="text-3xl font-semibold mt-1">€{simulatedBalance.toFixed(2)}</p></div>
         {simulationNotice && <p role="status" className="rounded-xl bg-emerald-950 p-4 text-sm text-emerald-200">{simulationNotice}</p>}
         <section className="bg-gradient-to-b from-slate-900 to-slate-900/40 border border-slate-800/80 rounded-3xl p-6 text-center shadow-xl relative overflow-hidden">
           <KaiMascot isSpeaking={false} state={copilotResponse.kaiState}/>
@@ -86,7 +82,7 @@ export default function Home() {
           <button 
             onClick={() => setShowWhyDetail(!showWhyDetail)}
             className="mt-4 text-xs font-medium text-cyan-400 hover:text-cyan-300 underline underline-offset-4">
-            {showWhyDetail ? "Hide Explanation" : "Why am I seeing this?"}
+            {showWhyDetail ? 'Ocultar explicación' : '¿Por qué?' }
           </button>
 
           {showWhyDetail && (
@@ -99,21 +95,17 @@ export default function Home() {
                   </li>
                 ))}
               </ul>
-              <div className="mt-3 p-2.5 bg-amber-500/10 border border-amber-500/20 rounded-xl text-[11px] text-amber-300 flex items-center space-x-2">
-                <span>⚠️</span>
-                <span>{copilotResponse.riskStatement}</span>
-              </div>
             </div>
           )}
         </section>
 
         <section className="bg-slate-900/90 border border-slate-800 rounded-2xl p-5 shadow-lg flex items-center justify-between">
           <div>
-            <p className="text-xs text-slate-400 uppercase tracking-wider font-mono">Monthly Suggestion</p>
+            <p className="text-xs text-slate-400 uppercase tracking-wider font-mono">Sugerencia mensual</p>
             <p className="text-base font-bold text-slate-100 mt-0.5">{copilotResponse.primaryCTA.label}</p>
           </div>
           <button onClick={handleAction} className="bg-gradient-to-r from-cyan-500 to-emerald-500 text-slate-950 font-bold px-5 py-3 rounded-xl shadow-lg text-sm">
-            {copilotResponse.recommendedAction}
+            {copilotResponse.recommendedAction === 'INVEST' ? 'Simular' : copilotResponse.recommendedAction === 'PROTECT' ? 'Proteger' : 'Revisar'}
           </button>
         </section>
 
@@ -121,10 +113,10 @@ export default function Home() {
         <MarketPulseWidget/>
 
         <section className="p-4 bg-slate-900/40 border border-slate-800/60 rounded-2xl space-y-2 text-center">
-          <p className="text-xs text-slate-500 uppercase font-mono">Demo Simulation Controls</p>
+          <p className="text-xs text-slate-500 uppercase font-mono">Cambiar escenario</p>
           <div className="flex justify-center space-x-3 text-xs">
-            <button onClick={handleSimulateNormal} className="px-3 py-1.5 bg-slate-800 border border-slate-700 rounded-lg hover:bg-slate-700 transition-colors">Normal Mode (Invest)</button>
-            <button onClick={handleSimulateProtect} className="px-3 py-1.5 bg-slate-800 border border-slate-700 rounded-lg hover:bg-slate-700 transition-colors">Low Buffer (Protect Mode)</button>
+            <button onClick={handleSimulateNormal} className="px-3 py-1.5 bg-slate-800 border border-slate-700 rounded-lg hover:bg-slate-700 transition-colors">Con colchón</button>
+            <button onClick={handleSimulateProtect} className="px-3 py-1.5 bg-slate-800 border border-slate-700 rounded-lg hover:bg-slate-700 transition-colors">Sin colchón</button>
           </div>
         </section>
       </main>

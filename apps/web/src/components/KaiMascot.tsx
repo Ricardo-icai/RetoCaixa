@@ -1,4 +1,5 @@
 import React, { useEffect } from 'react';
+import Image from 'next/image';
 import { KaiVisualState } from '@copilot/types';
 
 interface KaiMascotProps {
@@ -28,20 +29,19 @@ export const KaiMascot: React.FC<KaiMascotProps> = ({ state, isSpeaking }) => {
 
   return (
     <div className="flex flex-col items-center justify-center p-4">
-      <div className={`relative w-28 h-28 rounded-full flex items-center justify-center shadow-lg transition-all duration-500 ease-in-out ${getStateStyles(state)}`}>
+      <div className={`relative flex h-28 w-28 items-center justify-center rounded-3xl p-1 shadow-lg transition-all duration-500 ease-in-out ${getStateStyles(state)}`}>
         {state === 'PROTECTIVE_SHIELD' && (
-          <div className="absolute inset-0 rounded-full border-4 border-blue-300/60 animate-ping opacity-75" />
+          <div className="absolute inset-0 rounded-3xl border-4 border-blue-300/60 animate-ping opacity-75" />
         )}
-        <div className="w-20 h-20 bg-white/10 backdrop-blur-md rounded-full flex items-center justify-center border border-white/20">
-          <span className={`text-4xl transition-transform duration-300 ${isSpeaking ? 'scale-110 animate-pulse' : 'scale-100'}`}>
-            {state === 'PROTECTIVE_SHIELD' ? '🛡️' : state === 'CELEBRATION_MILESTONE' ? '🌟' : state === 'BUFFER_REST_PROTECT' ? '🧘' : '✨'}
-          </span>
+        <div className={`relative h-full w-full overflow-hidden rounded-[1.25rem] border border-white/30 transition-transform duration-300 ${isSpeaking ? 'scale-[1.03]' : 'scale-100'}`}>
+          <Image src="/Gemini_Generated_Image_l41t8bl41t8bl41t.jpg" alt="KAI" fill sizes="112px" className="object-cover" />
+          <div className={`absolute inset-0 ${isSpeaking ? 'animate-pulse bg-emerald-300/10' : ''}`} />
         </div>
       </div>
       {isSpeaking && (
         <div className="flex items-center space-x-1 mt-3">
           <span className="w-2 h-2 bg-emerald-400 rounded-full animate-ping" />
-          <span className="text-xs text-slate-400 font-medium">KAI is speaking...</span>
+          <span className="text-xs text-slate-400 font-medium">KAI está hablando...</span>
         </div>
       )}
     </div>
