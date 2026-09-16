@@ -16,7 +16,7 @@ type PostRecord = {
 export type Viewer = {
   id: string; label: string; csrfToken: string; actions: number[]; subscriptions: Set<string>;
   kycStatus: KycStatus; identityVerified: boolean; visibility: 'PUBLIC' | 'PRIVATE';
-  countryCode?: string; goals: InvestorGoal[]; consentedAt?: string; legalAcceptance?: LegalAcceptance;
+  countryCode?: string; nationality?: string; goals: InvestorGoal[]; consentedAt?: string; legalAcceptance?: LegalAcceptance;
 };
 type Store = { viewers: Map<string, Viewer>; posts: PostRecord[]; followers?: Map<string, Set<string>> };
 
@@ -94,7 +94,7 @@ export function communitySnapshot(viewer: Viewer, chatSessionId?: string): Commu
     feed,
     viewer: viewer.label,
     csrfToken: viewer.csrfToken,
-    onboarding: { completed: viewer.kycStatus === 'VERIFIED' && currentLegalAcceptance(viewer.legalAcceptance) && viewer.goals.length > 0, kycStatus: viewer.kycStatus, identityVerified: viewer.identityVerified, visibility: viewer.visibility, countryCode: viewer.countryCode, goals: viewer.goals, consentedAt: viewer.consentedAt, legalAcceptance: viewer.legalAcceptance },
+    onboarding: { completed: viewer.kycStatus === 'VERIFIED' && currentLegalAcceptance(viewer.legalAcceptance) && viewer.goals.length > 0, kycStatus: viewer.kycStatus, identityVerified: viewer.identityVerified, visibility: viewer.visibility, countryCode: viewer.countryCode, nationality: viewer.nationality, goals: viewer.goals, consentedAt: viewer.consentedAt, legalAcceptance: viewer.legalAcceptance },
     channels: channels.map(channel => ({ ...channel, subscribed: viewer.subscriptions.has(channel.id), subscriberCount: followers.get(channel.id)?.size ?? 0 })),
     posts: personalizedPosts.map(post => ({
       id: post.id, kind: post.kind, topic: post.topic, title: post.title, text: post.text,
@@ -163,6 +163,8 @@ export function mutateCommunity(viewer: Viewer, body: Record<string, unknown>, c
     if (body.visibility !== 'PUBLIC' && body.visibility !== 'PRIVATE') throw new CommunityError(400, 'Elige la visibilidad de tu perfil.');
     if (typeof body.countryCode !== 'string' || !/^[A-Z]{2}$/.test(body.countryCode)) throw new CommunityError(400, 'Selecciona un país válido.');
     if (!Array.isArray(body.goals) || body.goals.length === 0 || body.goals.some(goal => !investorGoals.includes(goal as InvestorGoal))) throw new CommunityError(400, 'Elige al menos un objetivo válido.');
+    const nationality = textField(body.nationality, 2, 80, 'Nacionalidad');
+    viewer.nationality = nationality;
     viewer.visibility = body.visibility;
     viewer.countryCode = body.countryCode;
     viewer.goals = [...new Set(body.goals as InvestorGoal[])];

@@ -44,3 +44,12 @@ No hay un mecanismo técnico automático que garantice legalidad de futuras func
 Las referencias no son una revisión exhaustiva de todos los ordenamientos ni acreditan la aplicabilidad de todas sus obligaciones a esta demo.
 
 Actualización de edad: ver `age-access-review.md`. La fecha completa de nacimiento se utiliza durante la petición, pero no se conserva; el recibo registra resultado favorable, método y fecha de comprobación.
+
+
+## Fecha de nacimiento y nacionalidad · 2026-09-16
+
+Cambio: selectores independientes de día, mes y año siempre visibles. Se retira la entrada manual de fecha a petición del usuario. Se conserva la comprobación de fechas y mayoría de edad en cliente y servidor sin almacenar la fecha completa. Nacionalidad obligatoria declarada (2–80 caracteres; admite varias), separada del país de residencia, para completar los datos del alta. Se guarda en el Map de sesión y solo se devuelve al propio visitante en el onboarding; no se incorpora al perfil público ni se envía a terceros nuevos.
+
+Alcance: misma demo educativa, sin incorporación de nuevos mercados, operaciones reales ni acreditación de elegibilidad por residencia o nacionalidad. La necesidad y base jurídica de recoger nacionalidad en producción siguen pendientes de revisión, junto con responsable, retención persistente y garantías de identidad ya descritos. Revisión técnica: cambio de código de esta fecha; responsable jurídico pendiente de designación.
+
+Privacidad pasa a 2026-09-16.3; la versión previa queda conservada en legal-archive/2026-09-16.2-documents.ts.txt y su policy. Términos y riesgos mantienen versión. Las aceptaciones previas requieren renovación. Pruebas: formatos escritos/pegados, fechas imposibles, edad, nacionalidad ausente o demasiado larga, almacenamiento separado de residencia y rechazo de privacidad anterior o aceptación ausente. No se añaden aprobaciones jurídicas.

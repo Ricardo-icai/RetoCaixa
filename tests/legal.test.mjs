@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { legalVersions } from '../apps/web/src/legal/policy.ts';
 import { communitySnapshot, getViewer, mutateCommunity, hasCompletedOnboarding } from '../apps/web/src/server/community.ts';
 
-const submission = () => ({ operation: 'completeOnboarding', goals: ['Aprender a invertir'], visibility: 'PRIVATE', countryCode: 'ES', acceptTerms: true, acknowledgePrivacy: true, acceptRisk: true, dateOfBirth: '1990-05-15', legalVersions: { ...legalVersions } });
+const submission = () => ({ operation: 'completeOnboarding', goals: ['Aprender a invertir'], visibility: 'PRIVATE', countryCode: 'ES', nationality: 'Española', acceptTerms: true, acknowledgePrivacy: true, acceptRisk: true, dateOfBirth: '1990-05-15', legalVersions: { ...legalVersions } });
 
 test('server rejects absent, false, coerced and stale legal acceptance before changing profile', () => {
   for (const key of ['acceptTerms', 'acknowledgePrivacy', 'acceptRisk', 'dateOfBirth', 'legalVersions']) {
@@ -58,4 +58,27 @@ test('old receipts cannot verify, publish or reply and can be renewed', () => {
   mutateCommunity(viewer, submission());
   mutateCommunity(viewer, { operation: 'verifyIdentityDemo' });
   assert.equal(hasCompletedOnboarding(viewer.id), true);
+});
+
+
+test('nationality is required, bounded, trimmed and independent of residence', () => {
+  for (const nationality of [undefined, null, 12, '', '  ', 'E', 'a'.repeat(81)]) {
+    const viewer = getViewer();
+    assert.throws(() => mutateCommunity(viewer, { ...submission(), nationality }), error => error.status === 400);
+    assert.equal(viewer.consentedAt, undefined);
+    assert.equal(viewer.nationality, undefined);
+  }
+  const viewer = getViewer();
+  const snapshot = mutateCommunity(viewer, { ...submission(), nationality: '  Mexicana, española  ' });
+  assert.equal(snapshot.onboarding.nationality, 'Mexicana, española');
+  assert.equal(communitySnapshot(viewer).onboarding.nationality, 'Mexicana, española');
+  assert.equal(viewer.countryCode, 'ES');
+});
+
+test('the previous privacy version requires renewed acceptance', () => {
+  const viewer = getViewer();
+  const body = submission();
+  body.legalVersions.privacy = '2026-09-16.2';
+  assert.throws(() => mutateCommunity(viewer, body), error => error.status === 400);
+  assert.equal(viewer.legalAcceptance, undefined);
 });

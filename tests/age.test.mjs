@@ -1,5 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { birthDateToISO } from '../apps/web/src/community/birthDate.ts';
 import { birthDateError, demoToday } from '../apps/web/src/legal/age.ts';
 import { legalVersions } from '../apps/web/src/legal/policy.ts';
 import { getViewer, mutateCommunity } from '../apps/web/src/server/community.ts';
@@ -31,11 +32,23 @@ test('civil date is fixed to Madrid across UTC midnight and daylight saving', ()
 });
 
 test('server independently refuses underage signup and the former checkbox bypass', () => {
-  const body = { operation: 'completeOnboarding', goals: ['Aprender a invertir'], visibility: 'PRIVATE', countryCode: 'ES', acceptTerms: true, acknowledgePrivacy: true, acceptRisk: true, legalVersions };
+  const body = { operation: 'completeOnboarding', goals: ['Aprender a invertir'], visibility: 'PRIVATE', countryCode: 'ES', nationality: 'Española', acceptTerms: true, acknowledgePrivacy: true, acceptRisk: true, legalVersions };
   for (const extra of [{ dateOfBirth: demoToday() }, { confirmAdult: true }, { dateOfBirth: '2007-02-29' }]) {
     const viewer = getViewer();
     assert.throws(() => mutateCommunity(viewer, { ...body, ...extra }), error => error.status === 400);
     assert.equal(viewer.legalAcceptance, undefined);
     assert.equal(viewer.kycStatus, 'UNVERIFIED');
   }
+});
+
+
+test('typed and pasted birth dates normalize without swapping day and month', () => {
+  for (const input of ['15051990', '15/05/1990', '15-05-1990', '15.05.1990', ' 15/5/1990 ']) {
+    assert.equal(birthDateToISO(input), '1990-05-15');
+  }
+  assert.equal(birthDateToISO('1/2/2000'), '2000-02-01');
+  for (const input of ['', '15/05/90', '1505199', '//1990', '1990-05-15', 'hello']) {
+    assert.equal(birthDateToISO(input), '');
+  }
+  assert.ok(birthDateError(birthDateToISO('31022000'), '2026-09-16'));
 });

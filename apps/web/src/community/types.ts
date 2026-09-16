@@ -65,6 +65,7 @@ export type CommunitySnapshot = {
     identityVerified: boolean;
     visibility: 'PUBLIC' | 'PRIVATE';
     countryCode?: string;
+    nationality?: string;
     goals: InvestorGoal[];
     consentedAt?: string;
     legalAcceptance?: LegalAcceptance;
