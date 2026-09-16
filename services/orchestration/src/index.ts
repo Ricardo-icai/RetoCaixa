@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import type { AgentRun, Language, Session, Turn } from './contracts.ts';
+import type { AgentRun, Extraction, Language, Profile, Session, Turn } from './contracts.ts';
 import { interpret, type LanguageProvider } from './provider.ts';
 import { agentContracts, updateProfile, evaluateAgents } from './agents.ts';
 import { decide } from '../../../packages/decision-engine/src/profile.ts';
@@ -11,14 +11,17 @@ export function createSession(language: Language = 'es', now = Date.now()): Sess
   return { id: randomUUID(), profile: {}, provenance: {}, language, pending: 'goal', updatedAt: now, revision: 0, simulatedBalance: 0, executedRecommendations: [], messages: [{ id: randomUUID(), role: 'assistant', text: greeting(language), timestamp: new Date(now).toISOString() }] };
 }
 
-export async function runTurn(previous: Session, text: string, options: { provider?: LanguageProvider; now?: number; language?: Language } = {}): Promise<Turn> {
+export async function runTurn(previous: Session, text: string, options: { provider?: LanguageProvider; now?: number; language?: Language; declaredFacts?: Profile } = {}): Promise<Turn> {
   const session = structuredClone(previous);
   const now = options.now ?? Date.now();
   const timestamp = new Date(now).toISOString();
   session.language = options.language ?? session.language;
   const runs: AgentRun[] = [];
   const start = performance.now();
-  const { extraction, mode } = await interpret(text, session, options.provider);
+  // Structured onboarding facts are validated by the server before entering this path.
+  const { extraction, mode }: { extraction: Extraction; mode: Turn['provider'] } = options.declaredFacts
+    ? { extraction: { facts: options.declaredFacts, intent: 'profile' as const }, mode: 'demo' as const }
+    : await interpret(text, session, options.provider);
   runs.push({ id: 'voice-language', status: extraction.uncertain ? 'blocked' : 'ok', output: extraction, durationMs: performance.now() - start });
   updateProfile(session, extraction, timestamp);
   runs.push({ id: 'profile', status: 'ok', output: { profile: session.profile, provenance: session.provenance, revision: session.revision + 1 }, durationMs: 0 });

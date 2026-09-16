@@ -16,7 +16,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     if (req.method === 'POST') {
       if (req.headers['x-csrf-token'] !== entry.csrfToken) throw new HttpError(403, 'Actualiza la página antes de continuar.');
       if (!req.body || typeof req.body !== 'object' || Array.isArray(req.body)) throw new HttpError(400, 'Solicitud no válida.');
-      const allowed = ['operation', 'text', 'title', 'savedConversationId', 'revision', 'language', 'recommendationId', 'confirmed'];
+      const allowed = ['operation', 'text', 'title', 'savedConversationId', 'revision', 'language', 'recommendationId', 'confirmed', 'answers'];
       if (Object.keys(req.body).some(key => !allowed.includes(key))) throw new HttpError(400, 'La solicitud incluye campos no permitidos.');
       await mutate(entry, req.body);
     }

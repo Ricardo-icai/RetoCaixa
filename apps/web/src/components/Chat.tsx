@@ -1,6 +1,7 @@
 import Head from 'next/head';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { Field, Language, Message, PublicSession } from '../../../../packages/types/src/conversation.ts';
+import { KaiOnboarding } from './KaiOnboarding';
 import { KaiMascot } from './KaiMascot';
 import { KaiHeaderIcon } from './KaiHeaderIcon';
 import { useVoice } from '../hooks/useVoice';
@@ -21,6 +22,7 @@ export default function Chat() {
   const [session, setSession] = useState<PublicSession | null>(null);
   const sessionRef = useRef<PublicSession | null>(null);
   const [language, setLanguage] = useState<Language>('es');
+  const [onboardingOpen, setOnboardingOpen] = useState<boolean | null>(null);
   const [draft, setDraft] = useState('');
   const [busy, setBusy] = useState(false);
   const inFlight = useRef(false);
@@ -88,14 +90,14 @@ export default function Chat() {
     voice.stop();
     if (!window.confirm(en ? 'Delete and forget this conversation?' : '¿Borrar y olvidar esta conversación?')) return;
     const data = await mutate({ operation: 'reset' });
-    if (data) { setDraft(''); setPendingText(''); setConfirmation(null); }
+    if (data) { setDraft(''); setPendingText(''); setConfirmation(null); setOnboardingOpen(null); }
   }
 
   async function saveConversation(event: React.FormEvent) {
     event.preventDefault();
     voice.stop();
     const data = await mutate({ operation: 'save', title: saveTitle });
-    if (data) { setDraft(''); setPendingText(''); setConfirmation(null); setSaveTitle(''); setSaveOpen(false); }
+    if (data) { setDraft(''); setPendingText(''); setConfirmation(null); setSaveTitle(''); setSaveOpen(false); setOnboardingOpen(null); }
   }
 
   return <div className="min-h-screen bg-[#0a111b] text-slate-100">
@@ -106,7 +108,13 @@ export default function Chat() {
     </div></header>
     <main className="mx-auto max-w-6xl px-4 py-5 md:px-6">
       <p className="mb-5 rounded-xl border border-amber-300/15 bg-amber-300/5 px-4 py-3 text-xs text-amber-100/90">{en ? 'Demo without live market data or real transactions.' : 'Demo sin datos de mercado en directo ni operaciones reales.'}</p>
-      <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_290px]">
+      {session && (onboardingOpen ?? !hasUserMessage) ? <KaiOnboarding language={language} profile={session.profile} busy={busy} error={error}
+        onSkip={() => setOnboardingOpen(false)}
+        onComplete={async answers => {
+          voice.stop();
+          const data = await mutate({ operation: 'onboarding', answers });
+          if (data) setOnboardingOpen(false);
+        }} /> : <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_290px]">
         <section className="min-w-0 overflow-hidden rounded-3xl border border-white/10 bg-[#101b29]" aria-label={en ? 'Conversation with KAI' : 'Conversación con KAI'}>
           <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/10 px-5 py-4"><div><h1 className="font-semibold">{en ? 'Let’s talk about your next step' : 'Hablemos de tu siguiente paso'}</h1><p className="mt-1 text-xs text-slate-400">{voice.listening ? (en ? 'Listening…' : 'Te escucho…') : voice.speaking ? (en ? 'KAI is speaking…' : 'KAI está hablando…') : busy ? (en ? 'Reviewing your situation…' : 'Revisando tu situación…') : (en ? 'At your pace, one question at a time' : 'A tu ritmo, una pregunta cada vez')}</p></div><div className="flex items-center gap-2"><button type="button" disabled={!hasUserMessage || busy} onClick={() => setSaveOpen(true)} className="rounded-lg border border-emerald-300/30 px-3 py-2 text-xs font-semibold text-emerald-200 disabled:opacity-35">{en ? 'Save' : 'Guardar'}</button><button type="button" disabled={!hasUserMessage || busy} onClick={() => void resetChat()} className="rounded-lg px-3 py-2 text-xs font-semibold text-rose-200 hover:bg-rose-300/10 disabled:opacity-35">{en ? 'Reset' : 'Resetear'}</button><span aria-hidden="true" className={`h-2 w-2 shrink-0 rounded-full ${busy ? 'bg-amber-200' : 'bg-emerald-300'}`} /></div></div>
           <div className="chat-scroll h-[min(58dvh,600px)] min-h-72 space-y-5 overflow-y-auto px-4 py-6 sm:px-6" role="log" aria-label={en ? 'Messages' : 'Mensajes'} aria-live="polite" aria-relevant="additions text">
@@ -142,13 +150,13 @@ export default function Chat() {
           </div>
         </section>
         <aside className="space-y-4">
-          <section className="rounded-3xl border border-white/10 bg-[#101b29] p-5"><KaiMascot state={state} isSpeaking={voice.speaking} /><h2 className="text-center text-lg font-semibold">KAI</h2></section>
+          <section className="rounded-3xl border border-white/10 bg-[#101b29] p-5"><KaiMascot state={state} isSpeaking={voice.speaking} /><h2 className="text-center text-lg font-semibold">KAI</h2><button disabled={!session || busy} onClick={() => { voice.stop(); setOnboardingOpen(true); }} className="mt-4 w-full rounded-xl border border-cyan-300/25 px-3 py-3 text-xs text-cyan-200 disabled:opacity-40">{en ? 'Review my starting point · 3 steps' : 'Mi punto de partida · 3 pasos'}</button></section>
           <section className="rounded-2xl border border-white/10 p-5"><h2 className="text-sm font-semibold">{en ? 'What you’ve told me' : 'Lo que me has contado'}</h2><p className="mt-1 text-xs text-slate-400">{en ? 'Declared by you · Not verified with a bank' : 'Declarado por ti · Sin verificar con el banco'}</p><dl className="mt-4 space-y-3">{session && Object.entries(session.profile).filter(([key]) => key in labels).map(([key, value]) => <div key={key}><dt className="text-xs text-slate-400">{labels[key as Field]?.[en ? 1 : 0]}</dt><dd className="mt-1 break-words text-sm">{typeof value === 'number' && key !== 'horizonMonths' ? currency(value, language) : String(value)}</dd></div>)}</dl>{!session?.profile.goal && <p className="mt-3 text-sm text-slate-400">{en ? 'Your plan starts with a conversation.' : 'Tu plan empieza con una conversación.'}</p>}</section>
           <section className="rounded-2xl border border-emerald-300/15 bg-emerald-300/5 p-5"><h2 className="text-xs text-emerald-200">{en ? 'Simulated balance' : 'Saldo simulado'}</h2><p className="mt-2 text-3xl font-medium">{currency(session?.simulatedBalance ?? 0, language)}</p></section>
           <section className="rounded-2xl border border-white/10 p-5"><h2 className="text-sm font-semibold">{en ? 'Explore with KAI' : 'Descubre con KAI'}</h2>{[en ? 'What is diversification?' : '¿Qué es la diversificación?', en ? 'How do fees work?' : 'Explícame las comisiones', en ? 'What is happening in markets?' : '¿Qué pasa en el mercado?'].map(item => <button key={item} disabled={!session || busy || voice.conversation} onClick={() => { voice.stop(); void send(item); }} className="mt-3 block text-left text-xs leading-5 text-slate-300 hover:text-emerald-200 disabled:opacity-40">{item} ↗</button>)}</section>
           {(session?.savedConversations.length ?? 0) > 0 && <section className="rounded-2xl border border-white/10 p-5"><h2 className="text-sm font-semibold">{en ? 'Saved conversations' : 'Conversaciones guardadas'}</h2><div className="mt-3 space-y-2">{session?.savedConversations.map(saved => <details key={saved.id} className="rounded-xl bg-white/[0.035] p-3"><summary className="cursor-pointer text-sm font-medium text-emerald-200"><span className="block">{saved.title}</span><span className="mt-1 block text-[11px] font-normal text-slate-500">{new Intl.DateTimeFormat(en ? 'en-IE' : 'es-ES', { dateStyle: 'medium' }).format(new Date(saved.savedAt))} · {saved.messages.length} {en ? 'messages' : 'mensajes'}</span></summary><div className="mt-3 max-h-64 space-y-2 overflow-y-auto border-t border-white/10 pt-3">{saved.messages.map(message => <p key={message.id} className="text-xs leading-5 text-slate-300"><strong className="text-slate-100">{message.role === 'assistant' ? 'KAI' : en ? 'You' : 'Tú'}:</strong> {message.text}</p>)}</div><button type="button" disabled={busy} onClick={() => { if (window.confirm(en ? 'Delete this saved conversation?' : '¿Eliminar esta conversación guardada?')) void mutate({ operation: 'deleteSaved', savedConversationId: saved.id }); }} className="mt-3 text-xs text-rose-200 hover:underline disabled:opacity-40">{en ? 'Delete' : 'Eliminar'}</button></details>)}</div></section>}
         </aside>
-      </div>
+      </div>}
     </main>
     <dialog ref={dialog} onCancel={() => setConfirmation(null)} className="w-full max-w-md rounded-3xl border border-white/15 bg-slate-900 p-6 text-slate-100 backdrop:bg-black/70" aria-labelledby="confirm-title">
       <h2 id="confirm-title" className="text-lg font-semibold">{en ? 'Review your simulation' : 'Revisa tu simulación'}</h2><p className="my-5 text-3xl">{currency(confirmation?.advice?.amount ?? 0, language)}</p><p className="text-sm leading-6 text-slate-300">{en ? 'Demo global plan · Minimum horizon: 5 years · Illustrative annual cost: 0.20%.' : 'Plan global de ejemplo · Plazo mínimo: 5 años · Coste anual ilustrativo: 0,20 %.'}</p><p className="mt-4 text-sm leading-6 text-amber-100">{confirmation?.advice?.risk}</p><p className="mt-3 text-xs text-slate-400">{en ? 'Only the simulation balance changes. No money is sent to a bank or broker.' : 'Solo cambia el saldo de la simulación. No se envía dinero a un banco o bróker.'}</p><div className="mt-6 flex justify-end gap-3"><button disabled={busy} onClick={() => setConfirmation(null)} className="rounded-xl px-3 py-3 text-sm">{en ? 'Cancel' : 'Cancelar'}</button><button disabled={busy} onClick={async () => { await mutate({ operation: 'simulate', recommendationId: confirmation?.id, confirmed: true }); setConfirmation(null); }} className="rounded-xl bg-emerald-300 px-4 py-3 text-sm font-semibold text-slate-950 disabled:opacity-40">{en ? 'Confirm simulation' : 'Confirmar simulación'}</button></div>

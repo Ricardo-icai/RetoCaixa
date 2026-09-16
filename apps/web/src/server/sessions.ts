@@ -1,3 +1,4 @@
+import { validateKaiOnboarding, onboardingSummary } from '../community/kaiOnboarding.ts';
 import { randomUUID } from 'node:crypto';
 import { createSession, runTurn } from '../../../../services/orchestration/src/index.ts';
 import { evaluateAgents } from '../../../../services/orchestration/src/agents.ts';
@@ -84,6 +85,15 @@ export async function mutate(entry: Entry, body: Record<string, unknown>) {
       entry.savedConversations.splice(index, 1);
       entry.session.revision += 1;
       entry.session.updatedAt = now;
+      return;
+    }
+    if (body.operation === 'onboarding') {
+      const facts = validateKaiOnboarding(body.answers);
+      if (!facts) throw new HttpError(400, 'Revisa los ingresos, gastos, deudas y respuesta sobre riesgo.');
+      const turn = await runTurn(entry.session, onboardingSummary(facts, language), { language, declaredFacts: facts });
+      entry.session = turn.session;
+      entry.provider = turn.provider;
+      entry.traces = [...entry.traces, turn.trace].slice(-30);
       return;
     }
     if (body.operation === 'message') {

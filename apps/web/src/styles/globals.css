@@ -5,3 +5,9 @@ html { color-scheme: dark; background: #020617; }
 body { margin: 0; background: #020617; color: #f1f5f9; }
 :focus-visible { outline: 2px solid #34d399; outline-offset: 4px; }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
+
+@keyframes kai-onboarding-enter {
+  from { opacity: 0; transform: translateX(12px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+.kai-onboarding-step { animation: kai-onboarding-enter 220ms ease-out; }
