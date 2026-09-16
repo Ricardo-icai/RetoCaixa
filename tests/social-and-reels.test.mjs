@@ -6,7 +6,7 @@ import { getSession, mutate } from '../apps/web/src/server/sessions.ts';
 import { assetSuggestions } from '../apps/web/src/server/assetSuggestions.ts';
 
 function publicProfile(viewer) {
-  mutateCommunity(viewer, { operation: 'completeOnboarding', goals: ['Aprender a invertir'], visibility: 'PUBLIC', countryCode: 'ES', acceptTerms: true, legalVersions, confirmAdult: true, acknowledgePrivacy: true, acceptRisk: true });
+  mutateCommunity(viewer, { operation: 'completeOnboarding', goals: ['Aprender a invertir'], visibility: 'PUBLIC', countryCode: 'ES', acceptTerms: true, legalVersions, dateOfBirth: '1990-05-15', acknowledgePrivacy: true, acceptRisk: true });
   mutateCommunity(viewer, { operation: 'verifyIdentityDemo' });
 }
 const message = (entry, text) => mutate(entry, { operation: 'message', text, revision: entry.session.revision });

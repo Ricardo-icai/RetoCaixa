@@ -24,7 +24,7 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
     if (req.method === 'POST') {
       if (req.headers['x-csrf-token'] !== viewer.csrfToken) throw new CommunityError(403, 'Actualiza la página antes de continuar.');
       if (!req.body || typeof req.body !== 'object' || Array.isArray(req.body)) throw new CommunityError(400, 'Solicitud no válida.');
-      const allowed = ['operation', 'kind', 'topic', 'title', 'text', 'postId', 'replyId', 'channelId', 'acceptTerms', 'acknowledgePrivacy', 'confirmAdult', 'legalVersions', 'acceptRisk', 'visibility', 'countryCode', 'goals'];
+      const allowed = ['operation', 'kind', 'topic', 'title', 'text', 'postId', 'replyId', 'channelId', 'acceptTerms', 'acknowledgePrivacy', 'dateOfBirth', 'legalVersions', 'acceptRisk', 'visibility', 'countryCode', 'goals'];
       if (Object.keys(req.body).some(key => !allowed.includes(key))) throw new CommunityError(400, 'La solicitud incluye campos no permitidos.');
     }
     const secure = req.headers['x-forwarded-proto'] === 'https' ? '; Secure' : '';

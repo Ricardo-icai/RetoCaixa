@@ -4,7 +4,7 @@ Estado a 2026-09-16: demo, sin cumplimiento mundial acreditado. Ningún país ti
 
 ## Controles verificados en código
 
-Registro con casillas no premarcadas; validación estricta de términos, lectura de privacidad, riesgos, declaración de 18 años y versiones en el servidor; recibo temporal asociado al visitante con fecha del servidor y país declarado. Los recibos antiguos no permiten completar el onboarding ni publicar/responder hasta renovar la aceptación. El visitante anónimo se crea antes de aceptar para gestionar sesión y CSRF; no equivale a un alta contractual ni a una cuenta autenticada persistente.
+Registro con casillas no premarcadas; validación estricta de términos, lectura de privacidad, riesgos, edad calculada desde la fecha de nacimiento declarada y versiones en el servidor; recibo temporal asociado al visitante con fecha del servidor y país declarado. Los recibos antiguos no permiten completar el onboarding ni publicar/responder hasta renovar la aceptación. El visitante anónimo se crea antes de aceptar para gestionar sesión y CSRF; no equivale a un alta contractual ni a una cuenta autenticada persistente.
 
 No se captura biometría ni se solicita un consentimiento ficticio. No se conserva IP/user-agent adicional como evidencia contractual. No se ha implementado un consentimiento de marketing. El onboarding y el KYC son simulados; no usar sus marcas como identidad verificada en producción. El perfil es privado por defecto, pero los mensajes del feed son públicos.
 
@@ -17,7 +17,7 @@ No se captura biometría ni se solicita un consentimiento ficticio. No se conser
 - Implementar autenticación, persistencia y archivo versionado de aceptación con acceso restringido y retención justificada. Actualmente el almacenamiento de comunidad es un Map en memoria, sin caducidad de perfiles. El esquema Prisma no es el almacenamiento activo y su modelo LegalConsent antiguo debe migrarse antes de usarlo (biometría e IP no deben ser obligatorias por defecto).
 - Implementar acceso, rectificación, supresión, exportación, oposición y gestión de solicitudes con verificación proporcional, plazos aplicables y trazabilidad; retirar consentimientos opcionales sin impedir el servicio cuando no sean necesarios.
 - Implementar denuncia de contenido, revisión humana, motivación, recurso y canales de contacto; evaluar obligaciones DSA por servicio y tamaño, transparencia del recomendador y obligaciones nacionales. No afirmar que existe un sistema de moderación completo.
-- Evaluar garantías de edad, riesgos para menores y accesibilidad. Declarar 18 años es una restricción de producto, no una prueba documental ni una regla mundial.
+- Evaluar garantías de edad, riesgos para menores y accesibilidad. El umbral de 18 años calculado desde la fecha declarada es una restricción de producto, no una prueba documental ni una regla mundial.
 - Revisar seguridad, protección de sesiones, retención de logs, gestión de incidentes y notificaciones a autoridades/interesados según la ley aplicable. Auditar cookies, almacenamiento local y terceros en el despliegue efectivo; gestionar consentimiento no esencial antes de cargarlo cuando corresponda.
 - Analizar clasificación de IA, transparencia y supervisión según el uso real; distinguir controles educativos deterministas de idoneidad regulatoria.
 
@@ -42,3 +42,5 @@ No hay un mecanismo técnico automático que garantice legalidad de futuras func
 - Australia: https://www.oaic.gov.au/privacy/australian-privacy-principles
 
 Las referencias no son una revisión exhaustiva de todos los ordenamientos ni acreditan la aplicabilidad de todas sus obligaciones a esta demo.
+
+Actualización de edad: ver `age-access-review.md`. La fecha completa de nacimiento se utiliza durante la petición, pero no se conserva; el recibo registra resultado favorable, método y fecha de comprobación.

@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto';
+import { birthDateError, demoToday } from '../legal/age.ts';
 import { currentLegalAcceptance, validLegalSubmission, legalVersions, type LegalAcceptance } from '../legal/policy.ts';
 import { communityTopics, investorGoals, type CommunitySnapshot, type CommunityTopic, type CreatorChannel, type InvestorGoal, type KycStatus, type PostKind } from '../community/types.ts';
 import { learningPlan, recommendFeed } from './feedRecommendations.ts';
@@ -155,7 +156,10 @@ export function mutateCommunity(viewer: Viewer, body: Record<string, unknown>, c
     if (typeof body.channelId !== 'string' || !channels.some(channel => channel.id === body.channelId)) throw new CommunityError(404, 'Ese canal no está disponible.');
     setFollowUser(viewer, body.channelId, typeof body.following === 'boolean' ? body.following : !viewer.subscriptions.has(body.channelId));
   } else if (body.operation === 'completeOnboarding') {
-    if (!validLegalSubmission(body)) throw new CommunityError(400, 'Acepta los términos y riesgos vigentes, confirma la lectura de privacidad y que tienes al menos 18 años. Si el texto ha cambiado, actualiza la página.');
+    const checkedOn = demoToday(new Date(now));
+    const ageError = birthDateError(body.dateOfBirth, checkedOn);
+    if (ageError) throw new CommunityError(400, ageError);
+    if (!validLegalSubmission(body)) throw new CommunityError(400, 'Acepta los términos y riesgos vigentes, confirma la lectura de privacidad. Si el texto ha cambiado, actualiza la página.');
     if (body.visibility !== 'PUBLIC' && body.visibility !== 'PRIVATE') throw new CommunityError(400, 'Elige la visibilidad de tu perfil.');
     if (typeof body.countryCode !== 'string' || !/^[A-Z]{2}$/.test(body.countryCode)) throw new CommunityError(400, 'Selecciona un país válido.');
     if (!Array.isArray(body.goals) || body.goals.length === 0 || body.goals.some(goal => !investorGoals.includes(goal as InvestorGoal))) throw new CommunityError(400, 'Elige al menos un objetivo válido.');
@@ -163,7 +167,7 @@ export function mutateCommunity(viewer: Viewer, body: Record<string, unknown>, c
     viewer.countryCode = body.countryCode;
     viewer.goals = [...new Set(body.goals as InvestorGoal[])];
     viewer.consentedAt = new Date(now).toISOString();
-    viewer.legalAcceptance = { versions: { ...legalVersions }, acceptedAt: viewer.consentedAt, countryCode: viewer.countryCode, adultConfirmed: true };
+    viewer.legalAcceptance = { versions: { ...legalVersions }, acceptedAt: viewer.consentedAt, countryCode: viewer.countryCode, ageCheck: { minimumAge: 18, method: 'declared_birth_date', checkedOn } };
     viewer.kycStatus = 'PENDING';
     viewer.identityVerified = false;
   } else if (body.operation === 'verifyIdentityDemo') {

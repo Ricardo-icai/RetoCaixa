@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 import { communitySnapshot, getViewer, mutateCommunity } from '../apps/web/src/server/community.ts';
 
 function verify(viewer, goals = ['Aprender a invertir']) {
-  mutateCommunity(viewer, { operation: 'completeOnboarding', goals, visibility: 'PRIVATE', countryCode: 'ES', acceptTerms: true, legalVersions, confirmAdult: true, acknowledgePrivacy: true, acceptRisk: true });
+  mutateCommunity(viewer, { operation: 'completeOnboarding', goals, visibility: 'PRIVATE', countryCode: 'ES', acceptTerms: true, legalVersions, dateOfBirth: '1990-05-15', acknowledgePrivacy: true, acceptRisk: true });
   mutateCommunity(viewer, { operation: 'verifyIdentityDemo' });
 }
 
@@ -76,8 +76,8 @@ test('onboarding requires legal consent and verification before publishing', () 
   const viewer = getViewer();
   assert.equal(communitySnapshot(viewer).onboarding.completed, false);
   assert.throws(() => mutateCommunity(viewer, { operation: 'publish', kind: 'debate', topic: 'Riesgo', title: 'Una pregunta', text: 'Este contenido tiene longitud suficiente.' }), error => error.status === 403);
-  assert.throws(() => mutateCommunity(viewer, { operation: 'completeOnboarding', goals: ['Gestionar mi dinero'], visibility: 'PRIVATE', countryCode: 'ES', acceptTerms: true, legalVersions, confirmAdult: true, acknowledgePrivacy: false, acceptRisk: true }), error => error.status === 400);
-  mutateCommunity(viewer, { operation: 'completeOnboarding', goals: ['Gestionar mi dinero'], visibility: 'PUBLIC', countryCode: 'ES', acceptTerms: true, legalVersions, confirmAdult: true, acknowledgePrivacy: true, acceptRisk: true });
+  assert.throws(() => mutateCommunity(viewer, { operation: 'completeOnboarding', goals: ['Gestionar mi dinero'], visibility: 'PRIVATE', countryCode: 'ES', acceptTerms: true, legalVersions, dateOfBirth: '1990-05-15', acknowledgePrivacy: false, acceptRisk: true }), error => error.status === 400);
+  mutateCommunity(viewer, { operation: 'completeOnboarding', goals: ['Gestionar mi dinero'], visibility: 'PUBLIC', countryCode: 'ES', acceptTerms: true, legalVersions, dateOfBirth: '1990-05-15', acknowledgePrivacy: true, acceptRisk: true });
   assert.equal(communitySnapshot(viewer).onboarding.kycStatus, 'PENDING');
   mutateCommunity(viewer, { operation: 'verifyIdentityDemo' });
   const ready = communitySnapshot(viewer);
