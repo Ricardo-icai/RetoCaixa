@@ -17,13 +17,13 @@ const tutorialSteps = [
     description: 'Prueba decisiones con dinero virtual, sin riesgo real.',
   },
   {
-    tab: 'KAI',
+    tab: 'Aprender',
     icon: '✦',
     title: 'Pregunta y aprende con KAI',
     description: 'Pregunta tus dudas y aprende cada concepto paso a paso.',
   },
   {
-    tab: 'Canales',
+    tab: 'Red',
     icon: '💬',
     title: 'Construye tu propia red',
     description: 'Sigue canales y reúne sus publicaciones en tu feed.',

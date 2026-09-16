@@ -1,21 +1,17 @@
-import { useRouter } from 'next/router';
-import { activeMainTab, mainTabs } from '../navigation/mainTabs';
+import Link from 'next/link';
+import { mainTabs, type MainTab } from '../navigation/mainTabs';
 
-export function BottomNavBar() {
-  const router = useRouter();
-  if (router.pathname === '/' || router.pathname === '/verify-identity') return null;
-  const activeIndex = activeMainTab(router.pathname);
-
-  return <nav aria-label="Navegación móvil" className="fixed inset-x-0 bottom-0 z-50 border-t border-slate-800/70 bg-slate-950/90 backdrop-blur-xl" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
-    <div className="mx-auto flex h-16 max-w-md items-center justify-around px-2">
-      {mainTabs.map((tab, index) => {
-        const active = activeIndex === index;
-        return <button key={tab.id} type="button" onClick={() => void router.push(tab.path)} aria-current={active ? 'page' : undefined} aria-label={tab.label} className="flex h-full w-full flex-col items-center justify-center space-y-1 transition-transform active:scale-95">
-          <span aria-hidden="true" className={`text-xl ${active ? 'text-emerald-400 drop-shadow-[0_0_8px_rgba(52,211,153,0.8)]' : 'grayscale opacity-70'}`}>{tab.icon}</span>
-          <span className={`text-[9px] font-bold tracking-wide ${active ? 'text-emerald-400' : 'text-slate-500'}`}>{tab.label}</span>
-        </button>;
+export function BottomNavBar({ activeTab }: { activeTab: MainTab | null }) {
+  return <nav aria-label="Navegación principal" className="fixed bottom-0 left-1/2 z-50 w-full max-w-md -translate-x-1/2 rounded-t-3xl border border-b-0 border-slate-800 bg-slate-900/80 shadow-[0_-8px_32px_rgba(0,0,0,0.25)] backdrop-blur-xl" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
+    <div className="grid h-20 grid-cols-4 px-2">
+      {mainTabs.map(tab => {
+        const active = activeTab === tab.id;
+        return <Link key={tab.id} href={tab.path} aria-current={active ? 'page' : undefined} aria-label={tab.description} className="group relative flex min-w-0 flex-col items-center justify-center gap-1 rounded-2xl focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-4px] focus-visible:outline-emerald-300">
+          <span aria-hidden="true" className={`absolute top-1 h-0.5 w-5 rounded-full bg-emerald-300 transition-opacity duration-300 motion-reduce:transition-none ${active ? 'opacity-100' : 'opacity-0'}`} />
+          <img src={tab.icon} alt="" width={40} height={40} draggable={false} className={`h-10 w-10 object-contain transition-all duration-300 ease-in-out motion-reduce:transition-none ${active ? 'scale-110 drop-shadow-[0_0_12px_rgba(52,211,153,0.8)]' : 'opacity-50 grayscale group-hover:grayscale-0 group-hover:opacity-100 group-focus-visible:grayscale-0 group-focus-visible:opacity-100'}`} />
+          <span className={`text-[10px] font-semibold transition-colors duration-300 motion-reduce:transition-none ${active ? 'text-emerald-300' : 'text-slate-400 group-hover:text-slate-200'}`}>{tab.label}</span>
+        </Link>;
       })}
-      <button type="button" onClick={() => void router.push('/settings')} aria-current={router.pathname === '/settings' ? 'page' : undefined} className="flex h-full w-full flex-col items-center justify-center space-y-1 text-slate-300"><span aria-hidden="true" className="text-xl">⚙</span><span className="text-[9px] font-bold">Ajustes</span></button>
     </div>
   </nav>;
 }
