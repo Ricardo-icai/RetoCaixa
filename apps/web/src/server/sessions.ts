@@ -25,6 +25,13 @@ export function getSession(id?: string, language: Language = 'es'): Entry {
   sessions.set(session.id, entry);
   return entry;
 }
+
+// Reading recommendations must not create a chat, refresh its lifetime or expose it.
+export function findSession(id?: string, now = Date.now()): Entry | undefined {
+  const entry = id ? sessions.get(id) : undefined;
+  if (!entry || now - entry.session.updatedAt > 24 * 60 * 60 * 1000) return undefined;
+  return entry;
+}
 export function publicSession(entry: Entry): PublicSession {
   const { messages, profile, pending, language, revision, simulatedBalance, executedRecommendations } = entry.session;
   entry.savedConversations ??= [];
@@ -61,6 +68,7 @@ export async function mutate(entry: Entry, body: Record<string, unknown>) {
         messages: structuredClone(entry.session.messages),
         profile: structuredClone(entry.session.profile),
         simulatedBalance: entry.session.simulatedBalance,
+        learning: entry.session.learning ? structuredClone(entry.session.learning) : undefined,
       });
       const fresh = createSession(language, now);
       entry.session = { ...fresh, id: entry.session.id, revision: entry.session.revision + 1 };

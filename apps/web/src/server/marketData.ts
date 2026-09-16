@@ -1,7 +1,11 @@
-import type { AssetQuote, AssetSearchResponse, AssetSearchResult } from '../market/types.ts';
+import type { AnnualReturn, AssetQuote, AssetSearchResponse, AssetSearchResult } from '../market/types.ts';
+import { discoveryAssets, normalizeSearch, sectorMatches } from '../market/catalogue.ts';
 
 const baseUrl = 'https://api.twelvedata.com';
 const demoAssets: Array<AssetSearchResult & { price: number; change: number; percentChange: number; low: number; high: number; yearLow: number; yearHigh: number; volume?: number }> = [
+  { ...discoveryAssets[0], price: 135.2, change: 1.2, percentChange: 0.9, low: 132, high: 138, yearLow: 90, yearHigh: 150 },
+  { ...discoveryAssets[2], price: 210.5, change: -1, percentChange: -0.47, low: 208, high: 213, yearLow: 140, yearHigh: 280 },
+  { ...discoveryAssets[4], price: 480.1, change: 1.1, percentChange: 0.23, low: 478, high: 482, yearLow: 400, yearHigh: 500 },
   { symbol: 'AAPL', name: 'Apple Inc.', exchange: 'NASDAQ', country: 'US', currency: 'USD', type: 'Common Stock', price: 190, change: 1.2, percentChange: 0.64, low: 187, high: 192, yearLow: 164, yearHigh: 237, volume: 48000000 },
   { symbol: 'MSFT', name: 'Microsoft Corp.', exchange: 'NASDAQ', country: 'US', currency: 'USD', type: 'Common Stock', price: 420, change: -2.1, percentChange: -0.5, low: 417, high: 425, yearLow: 344, yearHigh: 468, volume: 21000000 },
   { symbol: 'SPY', name: 'SPDR S&P 500 ETF Trust', exchange: 'NYSE Arca', country: 'US', currency: 'USD', type: 'ETF', price: 550, change: 1.8, percentChange: 0.33, low: 547, high: 552, yearLow: 409, yearHigh: 565, volume: 62000000 },
@@ -16,7 +20,7 @@ const globalCache = globalThis as typeof globalThis & { kaiMarketCache?: Map<str
 const cache = globalCache.kaiMarketCache ??= new Map();
 
 function number(value: unknown) {
-  const parsed = typeof value === 'number' ? value : typeof value === 'string' ? Number(value) : NaN;
+  const parsed = typeof value === 'number' ? value : typeof value === 'string' && value.trim() ? Number(value) : NaN;
   return Number.isFinite(parsed) ? parsed : undefined;
 }
 
@@ -38,17 +42,19 @@ async function cached<T>(key: string, ttl: number, loader: () => Promise<T>) {
 }
 
 export async function searchAssets(query: string, apiKey = process.env.TWELVE_DATA_API_KEY): Promise<AssetSearchResponse> {
-  const normalized = query.trim();
+  const normalized = query.trim().replace(/^\$/, '');
   if (normalized.length < 1 || normalized.length > 50) return { results: [], configured: !!apiKey, source: apiKey ? 'twelve-data' : 'illustrative' };
   if (!apiKey) {
-    const needle = normalized.toLowerCase();
-    return { results: demoAssets.filter(asset => `${asset.symbol} ${asset.name} ${asset.type}`.toLowerCase().includes(needle)).map(({ price: _price, change: _change, percentChange: _percentChange, low: _low, high: _high, yearLow: _yearLow, yearHigh: _yearHigh, volume: _volume, ...asset }) => asset).slice(0, 8), configured: false, source: 'illustrative' };
+    const needle = normalizeSearch(normalized);
+    const related = sectorMatches(normalized);
+    return { results: demoAssets.filter(asset => normalizeSearch(`${asset.symbol} ${asset.name} ${asset.type}`).includes(needle) || related.some(item => item.symbol === asset.symbol)).map(({ price: _price, change: _change, percentChange: _percentChange, low: _low, high: _high, yearLow: _yearLow, yearHigh: _yearHigh, volume: _volume, ...asset }) => ({ ...asset, tags: discoveryAssets.find(item => item.symbol === asset.symbol)?.tags })).slice(0, 8), configured: false, source: 'illustrative' };
   }
   return cached(`search:${normalized.toLowerCase()}`, 5 * 60_000, async () => {
     const payload = await twelveData('/symbol_search', { symbol: normalized, outputsize: '8' }, apiKey);
     const rows = Array.isArray(payload.data) ? payload.data as Array<Record<string, unknown>> : [];
     const results = rows.map(row => ({ symbol: String(row.symbol ?? ''), name: String(row.instrument_name ?? row.symbol ?? ''), exchange: String(row.exchange ?? ''), micCode: typeof row.mic_code === 'string' ? row.mic_code : undefined, country: typeof row.country === 'string' ? row.country : undefined, currency: String(row.currency ?? ''), type: String(row.instrument_type ?? 'Instrumento') })).filter(asset => asset.symbol && asset.name);
-    return { results, configured: true, source: 'twelve-data' as const };
+    const combined = [...results, ...sectorMatches(normalized)];
+    return { results: [...new Map(combined.map(asset => [`${asset.symbol}|${asset.exchange}`, asset])).values()].slice(0, 8), configured: true, source: 'twelve-data' as const };
   });
 }
 
@@ -56,19 +62,57 @@ export async function getAssetQuote(asset: AssetSearchResult, includeProfile: bo
   if (!apiKey) {
     const match = demoAssets.find(item => item.symbol === asset.symbol && (!asset.exchange || item.exchange === asset.exchange));
     if (!match) throw new Error('Este activo necesita una clave de Twelve Data para consultar su información.');
-    return { ...asset, price: match.price, open: match.price - match.change, high: match.high, low: match.low, previousClose: match.price - match.change, change: match.change, percentChange: match.percentChange, volume: match.volume, fiftyTwoWeekLow: match.yearLow, fiftyTwoWeekHigh: match.yearHigh, marketOpen: false, asOf: new Date().toISOString(), source: 'illustrative' };
+    return { ...match, price: match.price, open: match.price - match.change, high: match.high, low: match.low, previousClose: match.price - match.change, change: match.change, percentChange: match.percentChange, volume: match.volume, fiftyTwoWeekLow: match.yearLow, fiftyTwoWeekHigh: match.yearHigh, marketOpen: false, asOf: new Date().toISOString(), source: 'illustrative' };
   }
   const quote = await cached<Record<string, unknown>>(`quote:${asset.symbol}:${asset.exchange}`, 10_000, () => twelveData('/quote', { symbol: asset.symbol, exchange: asset.exchange, prepost: 'true' }, apiKey));
   const profile = includeProfile ? await cached<Record<string, unknown> | null>(`profile:${asset.symbol}:${asset.exchange}`, 24 * 60 * 60_000, async () => {
     try { return await twelveData('/profile', { symbol: asset.symbol, exchange: asset.exchange }, apiKey); } catch { return null; }
   }) : null;
   const price = number(quote.extended_price) ?? number(quote.close);
-  if (price === undefined) throw new Error('La cotización no incluye un precio válido.');
+  if (price === undefined || price <= 0) throw new Error('La cotización no incluye un precio válido.');
   const range = quote.fifty_two_week && typeof quote.fifty_two_week === 'object' ? quote.fifty_two_week as Record<string, unknown> : {};
   const timestamp = number(quote.extended_timestamp) ?? number(quote.last_quote_at) ?? number(quote.timestamp);
   return {
-    ...asset, symbol: String(quote.symbol ?? asset.symbol), name: String(quote.name ?? profile?.name ?? asset.name), exchange: String(quote.exchange ?? asset.exchange), currency: String(quote.currency ?? asset.currency),
+    ...asset, symbol: String(quote.symbol ?? asset.symbol), name: String(quote.name ?? profile?.name ?? asset.name), exchange: String(quote.exchange ?? asset.exchange), currency: String(quote.currency ?? asset.currency), type: String(quote.instrument_type ?? quote.type ?? asset.type),
     price, open: number(quote.open), high: number(quote.high), low: number(quote.low), previousClose: number(quote.previous_close), change: number(quote.extended_change) ?? number(quote.change), percentChange: number(quote.extended_percent_change) ?? number(quote.percent_change), volume: number(quote.volume), marketOpen: typeof quote.is_market_open === 'boolean' ? quote.is_market_open : undefined, fiftyTwoWeekLow: number(range.low), fiftyTwoWeekHigh: number(range.high), asOf: timestamp ? new Date(timestamp * 1000).toISOString() : new Date().toISOString(), source: 'twelve-data',
     description: typeof profile?.description === 'string' ? profile.description : undefined, sector: typeof profile?.sector === 'string' ? profile.sector : undefined, industry: typeof profile?.industry === 'string' ? profile.industry : undefined, website: typeof profile?.website === 'string' ? profile.website : undefined,
+    oneYearReturn: includeProfile ? await getAnnualReturn(asset, apiKey) : undefined,
   };
+}
+
+export async function getAnnualReturn(asset: AssetSearchResult, apiKey = process.env.TWELVE_DATA_API_KEY): Promise<AnnualReturn | undefined> {
+  if (!apiKey) return undefined;
+  return cached(`annual:${asset.symbol}:${asset.exchange}`, 6 * 60 * 60_000, async () => {
+    try {
+      const end = new Date();
+      const target = new Date(end); target.setUTCFullYear(target.getUTCFullYear() - 1);
+      const start = new Date(target); start.setUTCDate(start.getUTCDate() - 7);
+      const payload = await twelveData('/time_series', { symbol: asset.symbol, exchange: asset.exchange, interval: '1day', start_date: start.toISOString().slice(0, 10), end_date: end.toISOString().slice(0, 10), outputsize: '400' }, apiKey);
+      const values = Array.isArray(payload.values) ? payload.values as Array<Record<string, unknown>> : [];
+      const rows = values.map(row => ({ date: String(row.datetime).slice(0, 10), close: number(row.close) })).filter(row => /^\d{4}-\d{2}-\d{2}$/.test(row.date) && row.close !== undefined && row.close > 0).sort((a, b) => b.date.localeCompare(a.date));
+      const latest = rows[0];
+      const base = rows.find(row => row.date <= target.toISOString().slice(0, 10));
+      if (!latest || !base || Date.parse(latest.date) - Date.parse(base.date) < 355 * 86400000 || end.getTime() - Date.parse(latest.date) > 7 * 86400000) return undefined;
+      const percent = (latest.close! / base.close! - 1) * 100;
+      if (!Number.isFinite(percent)) return undefined;
+      return { percent, from: base.date, to: latest.date, source: 'twelve-data' as const };
+    } catch { return undefined; }
+  });
+}
+
+export type FxQuote = { currency: string; perEuro: number; asOf: string; source: AssetQuote['source'] };
+export async function getEuroRate(currency: string, apiKey = process.env.TWELVE_DATA_API_KEY): Promise<FxQuote> {
+  if (!/^[A-Z]{3}$/.test(currency)) throw new Error('Esta divisa no está disponible en la simulación en euros.');
+  if (currency === 'EUR') return { currency, perEuro: 1, asOf: new Date().toISOString(), source: apiKey ? 'twelve-data' : 'illustrative' };
+  if (!apiKey) {
+    if (currency !== 'USD') throw new Error('El cambio de esta divisa necesita datos de mercado.');
+    return { currency, perEuro: 1.09, asOf: new Date().toISOString(), source: 'illustrative' };
+  }
+  return cached(`fx:EUR/${currency}`, 30_000, async () => {
+    const data = await twelveData('/exchange_rate', { symbol: `EUR/${currency}` }, apiKey);
+    const rate = number(data.rate);
+    if (!rate || rate <= 0) throw new Error('No se ha podido obtener el cambio a euros.');
+    const timestamp = number(data.timestamp);
+    return { currency, perEuro: rate, asOf: timestamp ? new Date(timestamp * 1000).toISOString() : new Date().toISOString(), source: 'twelve-data' as const };
+  });
 }

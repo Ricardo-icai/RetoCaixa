@@ -1,4 +1,13 @@
 export type Language = 'es' | 'en';
+export const learningTopics = ['Primeros pasos', 'Gestionar dinero', 'Riesgo', 'Fondos', 'Mercados'] as const;
+export type LearningTopic = typeof learningTopics[number];
+export type LearningReason = 'interest' | 'goal' | 'foundation' | 'protection' | 'risk';
+export type LearningFocus = { topic: LearningTopic; weight: number; reason: LearningReason };
+export type LearningContext = {
+  interests: Partial<Record<LearningTopic, number>>;
+  needs: LearningFocus[];
+  sectors?: Record<string, number>;
+};
 export type Profile = {
   goal?: string;
   horizonMonths?: number;
@@ -30,6 +39,7 @@ export type Session = {
   revision: number;
   simulatedBalance: number;
   executedRecommendations: string[];
+  learning?: LearningContext;
 };
 export type SavedConversation = {
   id: string;
@@ -39,6 +49,7 @@ export type SavedConversation = {
   messages: Message[];
   profile: Profile;
   simulatedBalance: number;
+  learning?: LearningContext;
 };
 export type Extraction = { facts: Profile; intent: Intent; topic?: string; uncertain?: boolean };
 export type AgentId = 'voice-language' | 'profile' | 'goals' | 'behavioural' | 'financial-capacity' | 'risk' | 'compliance' | 'data-quality' | 'market-intelligence' | 'news-events' | 'quantitative' | 'portfolio-product' | 'decision-engine' | 'experience-education';

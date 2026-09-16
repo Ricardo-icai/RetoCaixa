@@ -5,6 +5,7 @@ import { agentContracts, updateProfile, evaluateAgents } from './agents.ts';
 import { decide } from '../../../packages/decision-engine/src/profile.ts';
 import { explain } from './responses.ts';
 import { greeting, question } from './questions.ts';
+import { updateLearningContext } from './learning.ts';
 
 export function createSession(language: Language = 'es', now = Date.now()): Session {
   return { id: randomUUID(), profile: {}, provenance: {}, language, pending: 'goal', updatedAt: now, revision: 0, simulatedBalance: 0, executedRecommendations: [], messages: [{ id: randomUUID(), role: 'assistant', text: greeting(language), timestamp: new Date(now).toISOString() }] };
@@ -22,6 +23,7 @@ export async function runTurn(previous: Session, text: string, options: { provid
   updateProfile(session, extraction, timestamp);
   runs.push({ id: 'profile', status: 'ok', output: { profile: session.profile, provenance: session.provenance, revision: session.revision + 1 }, durationMs: 0 });
   const evaluation = await evaluateAgents(session, extraction, runs, now);
+  session.learning = updateLearningContext(session.learning, extraction, session.profile, evaluation.capacity);
   const decision = decide(session.profile, { missing: evaluation.quality.missing, stale: evaluation.quality.stale.length > 0, uncertain: !!extraction.uncertain, intent: extraction.intent, compliancePassed: evaluation.compliance.demoPassed }, evaluation.capacity, evaluation.risk);
   runs.push({ id: 'decision-engine', status: decision.action === 'INVEST' ? 'ok' : 'blocked', output: decision, durationMs: 0 });
   session.pending = evaluation.quality.stale[0] ?? evaluation.quality.missing[0];

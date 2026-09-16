@@ -1,4 +1,6 @@
-export const communityTopics = ['Primeros pasos', 'Gestionar dinero', 'Riesgo', 'Fondos', 'Mercados'] as const;
+import { learningTopics } from '../../../../packages/types/src/conversation.ts';
+import type { Reel } from './reels.ts';
+export const communityTopics = learningTopics;
 export type CommunityTopic = typeof communityTopics[number];
 export type PostKind = 'debate' | 'leccion' | 'movimiento' | 'consejo';
 export const investorGoals = ['Aprender a invertir', 'Gestionar mi dinero', 'Crear mi colchón', 'Invertir a largo plazo', 'Seguir inversores'] as const;
@@ -38,9 +40,21 @@ export type CommunityPost = {
   helpful: boolean;
   helpfulCount: number;
   replies: CommunityReply[];
+  recommendation?: { kind: 'personalized' | 'discovery'; reason: string };
 };
 
 export type CommunitySnapshot = {
+  reels: Reel[];
+  reelFeed: CommunitySnapshot['feed'];
+  feed: {
+    mode: 'personalized' | 'discovery';
+    source: 'chat' | 'saved' | 'onboarding' | 'none';
+    priorityTopics: CommunityTopic[];
+    targetPersonalizedPercent: 70;
+    targetDiscoveryPercent: 30;
+    preview: { total: number; personalized: number; discovery: number };
+    limited: boolean;
+  };
   posts: CommunityPost[];
   channels: CreatorChannel[];
   viewer: string;

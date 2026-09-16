@@ -6,7 +6,10 @@ export type AssetSearchResult = {
   country?: string;
   currency: string;
   type: string;
+  tags?: string[];
 };
+
+export type AnnualReturn = { percent: number; from: string; to: string; source: 'twelve-data' };
 
 export type AssetQuote = AssetSearchResult & {
   price: number;
@@ -26,6 +29,7 @@ export type AssetQuote = AssetSearchResult & {
   sector?: string;
   industry?: string;
   website?: string;
+  oneYearReturn?: AnnualReturn;
 };
 
 export type AssetSearchResponse = { results: AssetSearchResult[]; configured: boolean; source: AssetQuote['source'] };

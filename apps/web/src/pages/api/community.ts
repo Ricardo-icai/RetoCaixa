@@ -32,7 +32,8 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
     const mutation = req.method === 'POST'
       ? { ...req.body, consentIp: (req.headers['x-forwarded-for'] as string | undefined)?.split(',')[0].trim() ?? req.socket.remoteAddress ?? 'unknown', consentUserAgent: req.headers['user-agent'] }
       : null;
-    return res.status(200).json(mutation ? mutateCommunity(viewer, mutation) : communitySnapshot(viewer));
+    // The browser's HttpOnly cookie is the only chat identity accepted here.
+    return res.status(200).json(mutation ? mutateCommunity(viewer, mutation, req.cookies.kai_session) : communitySnapshot(viewer, req.cookies.kai_session));
   } catch (error) {
     if (error instanceof CommunityError) return res.status(error.status).json({ error: error.message });
     return res.status(500).json({ error: 'No se ha podido cargar la comunidad. Vuelve a intentarlo.' });

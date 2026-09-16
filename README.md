@@ -20,6 +20,14 @@ node --experimental-strip-types --test tests/*.test.mjs
 DATABASE_URL='postgresql://user:password@localhost:5432/stoxia' npm --prefix packages/database run validate
 ```
 
+## Feed conectado con KAI
+
+«Para ti» selecciona hasta diez publicaciones: siete relacionadas con los intereses y necesidades de aprendizaje detectados durante el chat, y tres de otros temas. Por ejemplo, hablar de ETF da prioridad a fondos; una deuda costosa detectada por el perfil da prioridad a gestionar el dinero. Se combinan las preguntas recientes, los objetivos, la experiencia, la capacidad financiera y el riesgo evaluados por la orquestación existente. Las preguntas recientes pesan más que las antiguas; los objetivos del onboarding sirven como punto de partida. Sin contexto se muestra una selección variada.
+
+La mezcla se calcula en el servidor a partir de la cookie de sesión, sin incluir mensajes ni importes del chat en la respuesta del feed. Se actualiza al entrar en la pantalla o al recuperar el foco. Cada publicación permite consultar por qué aparece. Guardar una conversación conserva su contexto educativo; resetear elimina el del chat activo; borrar una conversación guardada elimina su influencia. La memoria es temporal: caduca con la sesión después de 24 horas de inactividad y se pierde al reiniciar el servidor.
+
+La proporción 70/30 es un objetivo sujeto al catálogo disponible: nunca se repiten publicaciones para completarla. Los filtros de temas y «Siguiendo» conservan el catálogo completo. La demo incluye 30 microlecciones adicionales para explorar la mezcla; actualmente son tarjetas de texto, sin vídeos ni un servicio de reels. La interpretación usa reglas locales y cinco temas educativos, no comprensión semántica general ni un modelo de recomendación entrenado.
+
 ## Alcance
 
 Los documentos originales están en docs/. El esquema preparado para PostgreSQL está en `packages/database/prisma/schema.prisma`, pero la demo web todavía usa memoria del servidor: no hay autenticación ni persistencia conectada. Tampoco hay conexión bancaria, feeds de mercado reales o proveedor de IA externo. La verificación documental es solo una transición simulada de estado; no acredita identidades reales. Las publicaciones iniciales y todos los canales están marcados como ejemplos, sin atribuir movimientos ni consejos a inversores reales. Una red pública necesitaría conectar Prisma, un proveedor KYC autorizado, verificación de creadores, moderación, avisos y controles regulatorios. El chat usa un intérprete local limitado y una orquestación determinista; la voz depende del navegador. Los límites del motor son ilustrativos y no constituyen una evaluación completa de idoneidad.

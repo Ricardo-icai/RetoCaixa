@@ -1,0 +1,30 @@
+// packages/database/prisma/schema.prisma
+
+model PortfolioPosition {
+  id              String   @id @default(uuid())
+  userId          String
+  symbol          String   // Ej: "NVDA"
+  name            String   // Ej: "NVIDIA Corp."
+  amountInvested  Float    // Ej: 150.00 €
+  sharesOwned     Float    // Ej: 1.25
+  avgBuyPrice     Float    // Ej: 120.00 €
+  currentPrice    Float    // Ej: 135.00 €
+  ytdReturn       Float    // Ej: +164.2%
+  riskScore       Int      // 1 a 10
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+}
+
+model UserPreferenceMemory {
+  id                String   @id @default(uuid())
+  userId            String   @unique
+  favoriteSectors   String[] // Ej: ["Artificial Intelligence", "Clean Energy"]
+  lastDiscussedTopic String? // Ej: "Chips y Semiconductores"
+  riskTolerance     String   // "CONSERVATIVE" | "BALANCED" | "GROWTH"
+  
+  user User @relation(fields: [userId], references: [id])
+}

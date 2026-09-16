@@ -1,5 +1,9 @@
 import { randomUUID } from 'node:crypto';
 import { communityTopics, investorGoals, type CommunitySnapshot, type CommunityTopic, type CreatorChannel, type InvestorGoal, type KycStatus, type PostKind } from '../community/types.ts';
+import { learningPlan, recommendFeed } from './feedRecommendations.ts';
+import { learningContent } from '../community/learningContent.ts';
+import type { FollowersView, SocialProfile, SocialSnapshot } from '../community/socialTypes.ts';
+import { reelFromPost, type Reel } from '../community/reels.ts';
 
 type ReplyRecord = { id: string; owner: string; author: string; text: string; createdAt: string };
 type PostRecord = {
@@ -7,12 +11,12 @@ type PostRecord = {
   title: string; text: string; createdAt: string; demo: boolean; channelId?: string;
   helpfulBy: Set<string>; replies: ReplyRecord[];
 };
-type Viewer = {
+export type Viewer = {
   id: string; label: string; csrfToken: string; actions: number[]; subscriptions: Set<string>;
   kycStatus: KycStatus; identityVerified: boolean; visibility: 'PUBLIC' | 'PRIVATE';
   countryCode?: string; goals: InvestorGoal[]; consentedAt?: string; consentIp?: string; consentUserAgent?: string;
 };
-type Store = { viewers: Map<string, Viewer>; posts: PostRecord[] };
+type Store = { viewers: Map<string, Viewer>; posts: PostRecord[]; followers?: Map<string, Set<string>> };
 
 const channels: Omit<CreatorChannel, 'subscribed' | 'subscriberCount'>[] = [
   { id: 'nora-vega', name: 'Nora Vega', focus: 'Inversión a largo plazo', bio: 'Perfil ficticio de ejemplo. Comparte cómo piensa sobre diversificación, costes y horizonte temporal.', demo: true, identityVerified: false },
@@ -21,8 +25,14 @@ const channels: Omit<CreatorChannel, 'subscribed' | 'subscriberCount'>[] = [
 ];
 
 const globalCommunity = globalThis as typeof globalThis & { kaiCommunity?: Store };
-const store = globalCommunity.kaiCommunity ??= { viewers: new Map(), posts: seedPosts() };
+const store: Store = globalCommunity.kaiCommunity ??= { viewers: new Map(), posts: seedPosts() };
 if (!store.posts.some(post => post.id === 'demo-channel-1')) store.posts.unshift(...seedPosts().filter(post => post.channelId));
+if (!store.posts.some(post => post.id.startsWith('demo-learning-'))) store.posts.push(...seedPosts().filter(post => post.id.startsWith('demo-learning-')));
+const followers = store.followers ??= new Map<string, Set<string>>();
+for (const viewer of store.viewers.values()) for (const id of viewer.subscriptions ?? []) {
+  if (!followers.has(id)) followers.set(id, new Set());
+  followers.get(id)!.add(viewer.id);
+}
 
 export class CommunityError extends Error {
   status: number;
@@ -47,6 +57,7 @@ function seedPosts(): PostRecord[] {
   return [
     ...channelExamples.map((post, index) => ({ ...post, id: `demo-channel-${index + 1}`, owner: null, author: channels.find(channel => channel.id === post.channelId)!.name, createdAt: new Date(Date.now() - (index + 1) * 3600000).toISOString(), demo: true, helpfulBy: new Set<string>(), replies: [] })),
     ...examples.map((post, index) => ({ ...post, id: `demo-${index + 1}`, owner: null, author: 'Equipo KAI · ejemplo', createdAt: new Date(Date.now() - (index + 4) * 3600000).toISOString(), demo: true, helpfulBy: new Set<string>(), replies: [] })),
+    ...learningContent.map((post, index) => ({ ...post, kind: 'leccion' as const, id: `demo-learning-${index + 1}`, owner: null, author: 'Equipo KAI · ejemplo', createdAt: new Date(Date.now() - (index + 12) * 3600000).toISOString(), demo: true, helpfulBy: new Set<string>(), replies: [] })),
   ];
 }
 
@@ -73,26 +84,20 @@ export function hasCompletedOnboarding(id?: string): boolean {
   return viewer.kycStatus === 'VERIFIED' && !!viewer.consentedAt && viewer.goals.length > 0;
 }
 
-export function communitySnapshot(viewer: Viewer): CommunitySnapshot {
-  const preferredTopics = new Set<CommunityTopic>();
-  for (const goal of viewer.goals) {
-    if (goal === 'Gestionar mi dinero' || goal === 'Crear mi colchón') preferredTopics.add('Gestionar dinero');
-    if (goal === 'Aprender a invertir') preferredTopics.add('Primeros pasos');
-    if (goal === 'Invertir a largo plazo') preferredTopics.add('Fondos');
-  }
-  const personalizedPosts = [...store.posts].sort((a, b) => {
-    const aScore = (a.channelId && viewer.subscriptions.has(a.channelId) ? 2 : 0) + (preferredTopics.has(a.topic) ? 1 : 0);
-    const bScore = (b.channelId && viewer.subscriptions.has(b.channelId) ? 2 : 0) + (preferredTopics.has(b.topic) ? 1 : 0);
-    return bScore - aScore || Date.parse(b.createdAt) - Date.parse(a.createdAt);
-  });
+export function communitySnapshot(viewer: Viewer, chatSessionId?: string): CommunitySnapshot {
+  const { posts: personalizedPosts, feed } = recommendFeed(store.posts, learningPlan(viewer.goals, chatSessionId), viewer.subscriptions);
+  const reels = recommendFeed(store.posts.map(reelFromPost).filter((reel): reel is Reel => !!reel), learningPlan(viewer.goals, chatSessionId), viewer.subscriptions);
   return {
+    reels: reels.posts.slice(0, 10), reelFeed: reels.feed,
+    feed,
     viewer: viewer.label,
     csrfToken: viewer.csrfToken,
     onboarding: { completed: viewer.kycStatus === 'VERIFIED' && !!viewer.consentedAt && viewer.goals.length > 0, kycStatus: viewer.kycStatus, identityVerified: viewer.identityVerified, visibility: viewer.visibility, countryCode: viewer.countryCode, goals: viewer.goals, consentedAt: viewer.consentedAt },
-    channels: channels.map(channel => ({ ...channel, subscribed: viewer.subscriptions.has(channel.id), subscriberCount: [...store.viewers.values()].filter(item => item.subscriptions?.has(channel.id)).length })),
+    channels: channels.map(channel => ({ ...channel, subscribed: viewer.subscriptions.has(channel.id), subscriberCount: followers.get(channel.id)?.size ?? 0 })),
     posts: personalizedPosts.map(post => ({
       id: post.id, kind: post.kind, topic: post.topic, title: post.title, text: post.text,
       author: post.author, channelId: post.channelId, createdAt: post.createdAt, demo: post.demo,
+      recommendation: post.recommendation,
       mine: post.owner === viewer.id, helpful: post.helpfulBy.has(viewer.id),
       helpfulCount: post.helpfulBy.size,
       replies: post.replies.map(reply => ({ id: reply.id, author: reply.author, text: reply.text, createdAt: reply.createdAt, mine: reply.owner === viewer.id })),
@@ -107,7 +112,7 @@ function textField(value: unknown, min: number, max: number, label: string): str
   return value.trim();
 }
 
-export function mutateCommunity(viewer: Viewer, body: Record<string, unknown>): CommunitySnapshot {
+export function mutateCommunity(viewer: Viewer, body: Record<string, unknown>, chatSessionId?: string): CommunitySnapshot {
   const now = Date.now();
   viewer.actions = viewer.actions.filter(time => now - time < 60000);
   if (viewer.actions.length >= 20) throw new CommunityError(429, 'Has participado muchas veces en un minuto. Espera un poco.');
@@ -147,8 +152,7 @@ export function mutateCommunity(viewer: Viewer, body: Record<string, unknown>): 
     post.replies.splice(index, 1);
   } else if (body.operation === 'subscribe') {
     if (typeof body.channelId !== 'string' || !channels.some(channel => channel.id === body.channelId)) throw new CommunityError(404, 'Ese canal no está disponible.');
-    if (viewer.subscriptions.has(body.channelId)) viewer.subscriptions.delete(body.channelId);
-    else viewer.subscriptions.add(body.channelId);
+    setFollowUser(viewer, body.channelId, typeof body.following === 'boolean' ? body.following : !viewer.subscriptions.has(body.channelId));
   } else if (body.operation === 'completeOnboarding') {
     if (body.acceptTerms !== true || body.acceptBiometric !== true || body.acceptRisk !== true) throw new CommunityError(400, 'Debes aceptar los tres consentimientos para continuar.');
     if (body.visibility !== 'PUBLIC' && body.visibility !== 'PRIVATE') throw new CommunityError(400, 'Elige la visibilidad de tu perfil.');
@@ -169,5 +173,38 @@ export function mutateCommunity(viewer: Viewer, body: Record<string, unknown>): 
   } else {
     throw new CommunityError(400, 'Operación no válida.');
   }
-  return communitySnapshot(viewer);
+  return communitySnapshot(viewer, chatSessionId);
+}
+
+function profileFor(id: string, viewer: Viewer): SocialProfile {
+  const channel = channels.find(item => item.id === id);
+  const member = store.viewers.get(id);
+  if (!channel && (!member || (member.id !== viewer.id && (member.visibility !== 'PUBLIC' || member.kycStatus !== 'VERIFIED')))) throw new CommunityError(404, 'Este perfil no está disponible.');
+  return { id, name: channel?.name ?? member!.label, focus: channel?.focus ?? member!.goals.join(' · '), demo: true, following: viewer.subscriptions.has(id), followersCount: followers.get(id)?.size ?? 0, followingCount: member?.subscriptions.size ?? 0, friend: viewer.subscriptions.has(id) && !!member?.subscriptions.has(viewer.id) };
+}
+
+export function setFollowUser(viewer: Viewer, targetId: string, following: boolean) {
+  if (viewer.id === targetId) throw new CommunityError(400, 'No puedes seguirte a ti mismo.');
+  // Unfollowing remains possible when a previously public member goes private.
+  if (following || !viewer.subscriptions.has(targetId)) profileFor(targetId, viewer);
+  if (!followers.has(targetId)) followers.set(targetId, new Set());
+  if (following) { viewer.subscriptions.add(targetId); followers.get(targetId)!.add(viewer.id); }
+  else { viewer.subscriptions.delete(targetId); followers.get(targetId)!.delete(viewer.id); }
+}
+
+export function getFollowers(viewer: Viewer, targetId: string, offset = 0): FollowersView {
+  profileFor(targetId, viewer);
+  if (!Number.isSafeInteger(offset) || offset < 0) throw new CommunityError(400, 'Página no válida.');
+  const all = [...(followers.get(targetId) ?? [])];
+  const publicIds = all.filter(id => id === viewer.id || (store.viewers.get(id)?.visibility === 'PUBLIC' && store.viewers.get(id)?.kycStatus === 'VERIFIED'));
+  const ids = publicIds.slice(offset, offset + 20);
+  return { total: all.length, profiles: ids.map(id => profileFor(id, viewer)), nextOffset: offset + 20 < publicIds.length ? offset + 20 : null };
+}
+
+export function socialSnapshot(viewer: Viewer, chatSessionId?: string): SocialSnapshot {
+  const priorities = learningPlan(viewer.goals, chatSessionId).focus.map(item => item.topic);
+  const channelTopic: Record<string, string> = { 'nora-vega': 'Fondos', 'leo-solis': 'Gestionar dinero', 'alma-rios': 'Riesgo' };
+  const creators = channels.map(item => profileFor(item.id, viewer)).sort((a, b) => Number(a.following) - Number(b.following) || Number(priorities.includes(channelTopic[b.id] as CommunityTopic)) - Number(priorities.includes(channelTopic[a.id] as CommunityTopic)));
+  const members = [...store.viewers.values()].filter(item => item.id !== viewer.id && item.visibility === 'PUBLIC' && item.kycStatus === 'VERIFIED').slice(0, 40).map(item => profileFor(item.id, viewer));
+  return { me: profileFor(viewer.id, viewer), creators, members, csrfToken: viewer.csrfToken };
 }

@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { getAssetQuote, searchAssets } from '../apps/web/src/server/marketData.ts';
+import { getAnnualReturn, getAssetQuote, getEuroRate, searchAssets } from '../apps/web/src/server/marketData.ts';
 
 test('illustrative market fallback is explicit and supports multiple asset classes', async () => {
   const stockSearch = await searchAssets('Apple', '');
@@ -12,6 +12,46 @@ test('illustrative market fallback is explicit and supports multiple asset class
   assert.equal(quote.source, 'illustrative');
   assert.equal(Number.isFinite(quote.price), true);
   assert.equal(quote.currency, 'USD');
+});
+
+test('autocomplete accepts dollar-prefixed tickers and sector tags without inventing annual returns', async () => {
+  assert.equal((await searchAssets('$NVDA', '')).results[0].symbol, 'NVDA');
+  assert.ok((await searchAssets('nube', '')).results.some(asset => asset.symbol === 'MSFT'));
+  const result = (await searchAssets('inteligencia artificial', '')).results[0];
+  assert.equal(result.symbol, 'NVDA');
+  const quote = await getAssetQuote({ ...result, currency: 'EUR', name: 'forged', type: 'ETF' }, true, '');
+  assert.equal(quote.currency, 'USD');
+  assert.equal(quote.type, 'Common Stock');
+  assert.equal(quote.oneYearReturn, undefined);
+  assert.equal(await getAnnualReturn(result, ''), undefined);
+});
+
+test('one-year price return is calculated from dated history and unavailable for short history', async () => {
+  const original = globalThis.fetch;
+  const today = new Date(); const lastYear = new Date(today); lastYear.setUTCFullYear(lastYear.getUTCFullYear() - 1);
+  const latest = today.toISOString().slice(0, 10), first = lastYear.toISOString().slice(0, 10);
+  globalThis.fetch = async url => new Response(JSON.stringify({ values: String(url).includes('SHORT-HISTORY') ? [{ datetime: latest, close: '100' }] : [{ datetime: latest, close: '100' }, { datetime: first, close: '80' }] }));
+  try {
+    const annual = await getAnnualReturn({ symbol: 'ANNUAL-TEST', exchange: 'NASDAQ' }, 'test-key');
+    assert.equal(annual.percent, 25);
+    assert.equal(annual.from, first);
+    assert.equal(annual.to, latest);
+    assert.equal(await getAnnualReturn({ symbol: 'SHORT-HISTORY', exchange: 'NASDAQ' }, 'test-key'), undefined);
+  } finally { globalThis.fetch = original; }
+});
+
+test('exchange conversion keeps demo values explicit and rejects missing or unsupported currencies', async () => {
+  const demo = await getEuroRate('USD', '');
+  assert.equal(demo.perEuro, 1.09);
+  assert.equal(demo.source, 'illustrative');
+  assert.equal((await getEuroRate('EUR', '')).perEuro, 1);
+  await assert.rejects(getEuroRate('GBP', ''));
+  await assert.rejects(getEuroRate('USDT', ''));
+  const original = globalThis.fetch;
+  globalThis.fetch = async () => new Response(JSON.stringify({ rate: '0.84', timestamp: 1700000000 }));
+  try {
+    assert.equal((await getEuroRate('GBP', 'test-key')).perEuro, 0.84);
+  } finally { globalThis.fetch = original; }
 });
 
 test('illustrative fallback never invents an unknown asset quote', async () => {

@@ -13,7 +13,8 @@ test('posts, replies and helpful marks are shared across visitors', () => {
   verify(author);
   verify(visitor);
   const initial = communitySnapshot(author);
-  assert.equal(initial.posts.length, 7);
+  assert.ok(initial.posts.length >= 10);
+  assert.deepEqual(initial.feed.preview, { total: 10, personalized: 7, discovery: 3 });
   assert.ok(initial.posts.every(post => post.demo));
   assert.equal(initial.channels.length, 3);
 
