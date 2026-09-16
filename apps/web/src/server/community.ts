@@ -159,7 +159,10 @@ export function mutateCommunity(viewer: Viewer, body: Record<string, unknown>, c
     const checkedOn = demoToday(new Date(now));
     const ageError = birthDateError(body.dateOfBirth, checkedOn);
     if (ageError) throw new CommunityError(400, ageError);
-    if (!validLegalSubmission(body)) throw new CommunityError(400, 'Acepta los términos y riesgos vigentes, confirma la lectura de privacidad. Si el texto ha cambiado, actualiza la página.');
+    if (body.acceptTerms !== true) throw new CommunityError(400, 'Términos y condiciones: marca la casilla de aceptación para continuar.');
+    if (body.acknowledgePrivacy !== true) throw new CommunityError(400, 'Privacidad: confirma que has leído la información de privacidad.');
+    if (body.acceptRisk !== true) throw new CommunityError(400, 'Riesgos de la simulación: marca la casilla para confirmar que los comprendes.');
+    if (!validLegalSubmission(body)) throw new CommunityError(400, 'La versión de los documentos legales ha cambiado o falta. Actualiza la página y revisa las casillas de aceptación.');
     if (body.visibility !== 'PUBLIC' && body.visibility !== 'PRIVATE') throw new CommunityError(400, 'Elige la visibilidad de tu perfil.');
     if (typeof body.countryCode !== 'string' || !/^[A-Z]{2}$/.test(body.countryCode)) throw new CommunityError(400, 'Selecciona un país válido.');
     if (!Array.isArray(body.goals) || body.goals.length === 0 || body.goals.some(goal => !investorGoals.includes(goal as InvestorGoal))) throw new CommunityError(400, 'Elige al menos un objetivo válido.');

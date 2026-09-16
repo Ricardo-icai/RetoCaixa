@@ -1,5 +1,5 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
-import { getSession, publicSession, mutate, HttpError } from '../../server/sessions';
+import { getSession, publicSession, mutate, HttpError } from '../../server/sessions.ts';
 
 export const config = { api: { bodyParser: { sizeLimit: '8kb' } } };
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
@@ -17,7 +17,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       if (req.headers['x-csrf-token'] !== entry.csrfToken) throw new HttpError(403, 'Actualiza la página antes de continuar.');
       if (!req.body || typeof req.body !== 'object' || Array.isArray(req.body)) throw new HttpError(400, 'Solicitud no válida.');
       const allowed = ['operation', 'text', 'title', 'savedConversationId', 'revision', 'language', 'recommendationId', 'confirmed', 'answers'];
-      if (Object.keys(req.body).some(key => !allowed.includes(key))) throw new HttpError(400, 'La solicitud incluye campos no permitidos.');
+      const unsupportedFields = Object.keys(req.body).filter(key => !allowed.includes(key));
+      if (unsupportedFields.length) throw new HttpError(400, `No se pueden guardar estos campos: ${unsupportedFields.map(key => JSON.stringify(key.slice(0, 80))).join(', ')}. Actualiza la página e inténtalo de nuevo.`);
       await mutate(entry, req.body);
     }
     const secure = req.headers['x-forwarded-proto'] === 'https' ? '; Secure' : '';

@@ -1,5 +1,5 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
-import { CommunityError, communitySnapshot, getViewer, mutateCommunity } from '../../server/community';
+import { CommunityError, communitySnapshot, getViewer, mutateCommunity } from '../../server/community.ts';
 
 export const config = { api: { bodyParser: { sizeLimit: '2kb' } } };
 
@@ -24,8 +24,9 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
     if (req.method === 'POST') {
       if (req.headers['x-csrf-token'] !== viewer.csrfToken) throw new CommunityError(403, 'Actualiza la página antes de continuar.');
       if (!req.body || typeof req.body !== 'object' || Array.isArray(req.body)) throw new CommunityError(400, 'Solicitud no válida.');
-      const allowed = ['operation', 'kind', 'topic', 'title', 'text', 'postId', 'replyId', 'channelId', 'acceptTerms', 'acknowledgePrivacy', 'dateOfBirth', 'legalVersions', 'acceptRisk', 'visibility', 'countryCode', 'goals'];
-      if (Object.keys(req.body).some(key => !allowed.includes(key))) throw new CommunityError(400, 'La solicitud incluye campos no permitidos.');
+      const allowed = ['operation', 'kind', 'topic', 'title', 'text', 'postId', 'replyId', 'channelId', 'acceptTerms', 'acknowledgePrivacy', 'dateOfBirth', 'legalVersions', 'acceptRisk', 'visibility', 'countryCode', 'nationality', 'goals'];
+      const unsupportedFields = Object.keys(req.body).filter(key => !allowed.includes(key));
+      if (unsupportedFields.length) throw new CommunityError(400, `No se pueden guardar estos campos: ${unsupportedFields.map(key => JSON.stringify(key.slice(0, 80))).join(', ')}. Actualiza la página e inténtalo de nuevo.`);
     }
     const secure = req.headers['x-forwarded-proto'] === 'https' ? '; Secure' : '';
     res.setHeader('Set-Cookie', `kai_community=${viewer.id}; HttpOnly; SameSite=Strict; Path=/; Max-Age=86400${secure}`);
