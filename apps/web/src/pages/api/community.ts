@@ -24,13 +24,13 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
     if (req.method === 'POST') {
       if (req.headers['x-csrf-token'] !== viewer.csrfToken) throw new CommunityError(403, 'Actualiza la página antes de continuar.');
       if (!req.body || typeof req.body !== 'object' || Array.isArray(req.body)) throw new CommunityError(400, 'Solicitud no válida.');
-      const allowed = ['operation', 'kind', 'topic', 'title', 'text', 'postId', 'replyId', 'channelId', 'acceptTerms', 'acceptBiometric', 'acceptRisk', 'visibility', 'countryCode', 'goals'];
+      const allowed = ['operation', 'kind', 'topic', 'title', 'text', 'postId', 'replyId', 'channelId', 'acceptTerms', 'acknowledgePrivacy', 'confirmAdult', 'legalVersions', 'acceptRisk', 'visibility', 'countryCode', 'goals'];
       if (Object.keys(req.body).some(key => !allowed.includes(key))) throw new CommunityError(400, 'La solicitud incluye campos no permitidos.');
     }
     const secure = req.headers['x-forwarded-proto'] === 'https' ? '; Secure' : '';
     res.setHeader('Set-Cookie', `kai_community=${viewer.id}; HttpOnly; SameSite=Strict; Path=/; Max-Age=86400${secure}`);
     const mutation = req.method === 'POST'
-      ? { ...req.body, consentIp: (req.headers['x-forwarded-for'] as string | undefined)?.split(',')[0].trim() ?? req.socket.remoteAddress ?? 'unknown', consentUserAgent: req.headers['user-agent'] }
+      ? req.body
       : null;
     // The browser's HttpOnly cookie is the only chat identity accepted here.
     return res.status(200).json(mutation ? mutateCommunity(viewer, mutation, req.cookies.kai_session) : communitySnapshot(viewer, req.cookies.kai_session));

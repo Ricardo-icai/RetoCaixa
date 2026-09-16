@@ -1,3 +1,4 @@
+import type { LegalAcceptance } from '../legal/policy.ts';
 import { learningTopics } from '../../../../packages/types/src/conversation.ts';
 import type { Reel } from './reels.ts';
 export const communityTopics = learningTopics;
@@ -66,6 +67,7 @@ export type CommunitySnapshot = {
     countryCode?: string;
     goals: InvestorGoal[];
     consentedAt?: string;
+    legalAcceptance?: LegalAcceptance;
   };
   csrfToken: string;
 };

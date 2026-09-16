@@ -1,3 +1,4 @@
+import { legalVersions } from '../apps/web/src/legal/policy.ts';
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { getViewer, setFollowUser, getFollowers, socialSnapshot, communitySnapshot, mutateCommunity } from '../apps/web/src/server/community.ts';
@@ -5,7 +6,7 @@ import { getSession, mutate } from '../apps/web/src/server/sessions.ts';
 import { assetSuggestions } from '../apps/web/src/server/assetSuggestions.ts';
 
 function publicProfile(viewer) {
-  mutateCommunity(viewer, { operation: 'completeOnboarding', goals: ['Aprender a invertir'], visibility: 'PUBLIC', countryCode: 'ES', acceptTerms: true, acceptBiometric: true, acceptRisk: true });
+  mutateCommunity(viewer, { operation: 'completeOnboarding', goals: ['Aprender a invertir'], visibility: 'PUBLIC', countryCode: 'ES', acceptTerms: true, legalVersions, confirmAdult: true, acknowledgePrivacy: true, acceptRisk: true });
   mutateCommunity(viewer, { operation: 'verifyIdentityDemo' });
 }
 const message = (entry, text) => mutate(entry, { operation: 'message', text, revision: entry.session.revision });

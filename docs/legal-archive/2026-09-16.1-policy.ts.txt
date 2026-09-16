@@ -1,0 +1,17 @@
+// Keep published versions immutable; archive their text before changing these identifiers.
+export const legalVersions = { terms: '2026-09-16.1', privacy: '2026-09-16.1', risk: '2026-09-16.1' } as const;
+export type LegalAcceptance = {
+  versions: { terms: string; privacy: string; risk: string };
+  acceptedAt: string;
+  countryCode: string;
+  adultConfirmed: true;
+};
+export function currentLegalAcceptance(receipt?: LegalAcceptance): boolean {
+  return !!receipt && Object.entries(legalVersions).every(([key, value]) => receipt.versions[key as keyof typeof legalVersions] === value);
+}
+export function validLegalSubmission(body: Record<string, unknown>): boolean {
+  const versions = body.legalVersions;
+  return body.acceptTerms === true && body.acknowledgePrivacy === true && body.acceptRisk === true && body.confirmAdult === true
+    && !!versions && typeof versions === 'object' && !Array.isArray(versions)
+    && Object.entries(legalVersions).every(([key, value]) => (versions as Record<string, unknown>)[key] === value);
+}

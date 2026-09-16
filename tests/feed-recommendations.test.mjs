@@ -1,3 +1,4 @@
+import { legalVersions } from '../apps/web/src/legal/policy.ts';
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { getSession, mutate } from '../apps/web/src/server/sessions.ts';
@@ -45,7 +46,7 @@ test('cold start is varied, signup goals are a fallback, and following never rem
   assert.equal(before.feed.mode, 'discovery');
   assert.equal(before.feed.preview.personalized, 0);
   assert.equal(new Set(before.posts.slice(0, 5).map(post => post.topic)).size, 5);
-  mutateCommunity(viewer, { operation: 'completeOnboarding', goals: ['Invertir a largo plazo'], visibility: 'PRIVATE', countryCode: 'ES', acceptTerms: true, acceptBiometric: true, acceptRisk: true });
+  mutateCommunity(viewer, { operation: 'completeOnboarding', goals: ['Invertir a largo plazo'], visibility: 'PRIVATE', countryCode: 'ES', acceptTerms: true, legalVersions, confirmAdult: true, acknowledgePrivacy: true, acceptRisk: true });
   const after = mutateCommunity(viewer, { operation: 'subscribe', channelId: 'nora-vega' });
   assert.equal(after.feed.source, 'onboarding');
   assert.deepEqual(after.feed.priorityTopics, ['Fondos']);

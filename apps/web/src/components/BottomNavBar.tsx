@@ -15,6 +15,7 @@ export function BottomNavBar() {
           <span className={`text-[9px] font-bold tracking-wide ${active ? 'text-emerald-400' : 'text-slate-500'}`}>{tab.label}</span>
         </button>;
       })}
+      <button type="button" onClick={() => void router.push('/settings')} aria-current={router.pathname === '/settings' ? 'page' : undefined} className="flex h-full w-full flex-col items-center justify-center space-y-1 text-slate-300"><span aria-hidden="true" className="text-xl">⚙</span><span className="text-[9px] font-bold">Ajustes</span></button>
     </div>
   </nav>;
 }
