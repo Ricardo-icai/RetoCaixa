@@ -11,3 +11,8 @@ body { margin: 0; background: #020617; color: #f1f5f9; }
   to { opacity: 1; transform: translateX(0); }
 }
 .kai-onboarding-step { animation: kai-onboarding-enter 220ms ease-out; }
+
+@keyframes profile-enter-forward { from { opacity: 0; transform: translateX(18px); } to { opacity: 1; transform: translateX(0); } }
+@keyframes profile-enter-back { from { opacity: 0; transform: translateX(-18px); } to { opacity: 1; transform: translateX(0); } }
+.profile-step-forward { animation: profile-enter-forward 300ms ease-out; }
+.profile-step-back { animation: profile-enter-back 300ms ease-out; }

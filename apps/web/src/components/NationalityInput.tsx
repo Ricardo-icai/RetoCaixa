@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { nationalitySuggestions } from '../community/nationalities';
 
-export function NationalityInput({ value, onChange }: { value: string; onChange: (value: string) => void }) {
+export function NationalityInput({ value, onChange, minimal = false }: { value: string; onChange: (value: string) => void; minimal?: boolean }) {
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState(-1);
   const suggestions = nationalitySuggestions(value);
@@ -22,7 +22,7 @@ export function NationalityInput({ value, onChange }: { value: string; onChange:
         if (event.key === 'Enter' && expanded && active >= 0) { event.preventDefault(); select(suggestions[active]); }
       }}
       placeholder="Empieza a escribir: espa…" aria-describedby="nationality-help"
-      className="mt-2 w-full rounded-xl border border-white/15 bg-[#08111b] p-3 text-sm" />
+      className={minimal ? "mt-1 w-full border-b border-slate-700 bg-transparent py-3 text-sm focus:border-cyan-400 focus:outline-none" : "mt-2 w-full rounded-xl border border-white/15 bg-[#08111b] p-3 text-sm"} />
     <ul id="nationality-options" role="listbox" aria-label="Nacionalidades sugeridas" hidden={!expanded} className="absolute z-20 mt-1 max-h-60 w-full overflow-y-auto rounded-xl border border-white/15 bg-[#101d2a] p-1 shadow-xl">
       {suggestions.map((suggestion, index) => <li key={suggestion} id={`nationality-option-${index}`} role="option" aria-selected={active === index}
         onPointerDown={event => event.preventDefault()} onClick={() => select(suggestion)}

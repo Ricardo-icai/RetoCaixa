@@ -65,3 +65,13 @@ Evidencia técnica: pruebas de integración del 2026-09-16 sobre persistencia de
 
 
 Corrección de alta y sugerencias · 2026-09-16: la API admite el campo nacionalidad ya declarado y validado, identifica campos inesperados y distingue errores de cada aceptación legal. El autocompletado es local, permite escritura libre y varias nacionalidades; no envía búsquedas a terceros ni cambia la finalidad, los mercados, los documentos o sus versiones. Se comprueba el handler de alta con nacionalidad, el rechazo de campos inesperados y la búsqueda sin tildes. Se mantienen los pendientes jurídicos de producción descritos arriba.
+
+## Alta progresiva de perfil · 2026-09-17
+
+Función: el formulario existente se presenta en tres pasos (objetivos, visibilidad y datos personales), con KAI, navegación reversible y estados locales que conservan las respuestas al volver atrás. Se mantienen la nacionalidad con sugerencias locales, la fecha por selectores, las casillas contractuales y de lectura no premarcadas, la edad mínima y la verificación simulada. El texto de privacidad distingue perfil privado de publicaciones públicas.
+
+Alcance: mismos países y demo educativa; no se añaden mercados, destinatarios, terceros ni operaciones financieras. Misma finalidad y datos, sin persistir borradores de fecha en navegador. Los documentos aceptados y sus versiones no cambian. Base jurídica y necesidad de datos en producción, responsable de revisión y evaluación jurídica por mercado siguen pendientes conforme a los bloqueantes generales; esta reorganización no acredita cumplimiento ni identidad.
+
+Verificación técnica: TypeScript, pruebas de API/edad/aceptación y recorrido automatizado en navegador para móvil y escritorio. Se revisan selección múltiple, privacidad inicial, conservación al retroceder, nacionalidad por ratón/teclado, fechas imposibles y menores, envío, verificación y recarga. Animaciones con respeto a la preferencia de movimiento reducido.
+
+Resultado comprobado: 19 pruebas de servidor correctas, TypeScript y compilación de producción correctos. Chrome automatizado a 390×844 y 1280×844 completó alta y verificación, mantuvo datos al retroceder, validó errores de edad/fecha y recarga final, sin excepciones de JavaScript ni desbordamiento horizontal. Se revisaron capturas de objetivos y datos. El indicador de desarrollo se mueve arriba a la derecha para no interceptar Atrás en móvil. No se ha realizado auditoría exhaustiva en otros navegadores o con lectores de pantalla.
