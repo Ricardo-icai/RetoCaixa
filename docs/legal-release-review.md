@@ -86,3 +86,19 @@ Misma demo y territorios sin nuevos mercados u operaciones financieras. No se in
 Privacidad pasa a 2026-09-17.1 por los nuevos datos de identidad visual, con archivo inmutable de la versión anterior. La base jurídica, necesidad/retención de fotos, responsable jurídico, moderación de fotos/biografías, revisión territorial, autenticación permanente y derechos de producción siguen pendientes. Se mantienen los controles de edad y las restantes condiciones; no se activa biometría ni hay nuevos proveedores de fotos.
 
 Comprobación técnica: 14 pruebas de perfil/API/privacidad/red correctas, TypeScript y compilación de producción correctos. Chrome a 390 y 1280 píxeles verifica carga de foto, guardado y recarga, cancelación, separación entre perfiles privados/públicos, seguimiento persistente, pestañas y vídeos de muestra. Sin excepciones de JavaScript ni desbordamiento horizontal en esos recorridos. Se revisaron capturas; otros navegadores, lectores de pantalla y revisión jurídica de producción quedan pendientes.
+
+Ajustes y tutorial · 2026-09-17: acceso a repetir el tutorial dentro de Ajustes, simplificación de enlaces e iconografía vectorial propia en ajustes, tutorial y perfiles. Mismos datos, finalidad y territorios; documentos y versiones sin cambios. La repetición usa la preferencia local ya existente. TypeScript y pruebas de navegador a 390/1280 px: recorrido completo, repetición, Escape, restitución del foco y recarga correctos. Permanecen los pendientes de producción previamente documentados.
+
+## Chat abierto de texto y voz · 2026-09-17
+
+Se sustituye la entrada del chat por tarjetas/respuestas predefinidas por texto libre y dictado, conservando las reglas de decisión, confirmaciones de simulación y guardado de conversaciones. Barra fija sobre la navegación, estado de procesamiento inmediato, prevención de envíos duplicados y aviso si transcurren cinco segundos. El intérprete externo dispone de 3,5 segundos antes de recurrir a aclaración; la respuesta real de red/navegador no tiene una garantía universal de cinco segundos. No se inventan análisis de mercado ni se añaden esperas artificiales.
+
+Mismos datos y territorios de la demo, sin nuevos proveedores. La voz sigue usando el servicio del navegador, explicado en la interfaz; no se guarda audio ni se activa el micrófono sin acción del usuario. No cambian documentos aceptados ni versiones. Pruebas: conversación libre, protección ante deuda y alternativa segura por tiempo agotado, además de comprobaciones de navegador para texto y dictado simulado. La compatibilidad de voz real depende de permisos y navegador; evaluación jurídica de producción pendiente como antes.
+
+## Conversación contextual para objetivos de compra · 2026-09-17
+
+Se amplía la interpretación local de objetivos expresados libremente, incluyendo compras y errores de escritura habituales. Para compras, el flujo pide plazo, precio, ahorro reservado y aportación mensual; conserva varios datos declarados en un mensaje y calcula la diferencia y el ahorro mensual necesario. Estos importes forman parte de la información financiera voluntaria de conversación ya contemplada; no se añaden proveedores ni mercados, y no cambian los documentos ni sus versiones.
+
+El cálculo usa estimaciones del usuario, sin asumir rentabilidades, capacidad de gasto verificada ni financiación. No publica estos importes. Se mantienen los controles de incertidumbre, deuda y datos inválidos. Cambiar de objetivo borra supuestos de plazo, precio, ahorro y aportación anteriores. Continúan pendientes las garantías jurídicas y operativas de producción; la interpretación sigue siendo local y acotada, no comprensión universal del lenguaje.
+
+Verificación: conversaciones de compra completas, correcciones, múltiples datos, objetivos alternativos, fechas/plazos e importes, rechazo de hipótesis y ambigüedades, protección por deuda, regresión del chat y recorrido del ejemplo real en Chrome móvil con recarga.

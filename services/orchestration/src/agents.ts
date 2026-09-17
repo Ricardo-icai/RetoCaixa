@@ -22,12 +22,18 @@ export const agentContracts: Record<AgentId, { input: string; output: string; pe
 
 export function updateProfile(session: Session, extraction: Extraction, timestamp: string) {
   if (extraction.uncertain) return;
+  if (extraction.facts.goal && session.profile.goal && extraction.facts.goal !== session.profile.goal) {
+    for (const field of ['goalAmount', 'goalSavings', 'horizonMonths', 'monthlyContribution'] as const) {
+      delete session.profile[field]; delete session.provenance[field];
+    }
+  }
   Object.assign(session.profile, extraction.facts);
   for (const field of Object.keys(extraction.facts) as Field[]) session.provenance[field] = { source: 'user', updatedAt: timestamp };
 }
 
 export function dataQuality(session: Session, now: number) {
-  const stale = fields.filter(field => session.profile[field] !== undefined && (!session.provenance[field] || now - Date.parse(session.provenance[field]!.updatedAt) > 86400000 || !Number.isFinite(Date.parse(session.provenance[field]!.updatedAt))));
+  const tracked = [...fields, 'goalAmount', 'goalSavings'] as Field[];
+  const stale = tracked.filter(field => session.profile[field] !== undefined && (!session.provenance[field] || now - Date.parse(session.provenance[field]!.updatedAt) > 86400000 || !Number.isFinite(Date.parse(session.provenance[field]!.updatedAt))));
   return { missing: missing(session.profile), stale };
 }
 

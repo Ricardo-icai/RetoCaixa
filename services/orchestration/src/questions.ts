@@ -1,7 +1,10 @@
+import { isPurchaseGoal } from '../../../packages/decision-engine/src/purchase.ts';
 import type { Field, Language, Profile } from './contracts.ts';
 
 export const fields: Field[] = ['goal', 'horizonMonths', 'monthlyIncome', 'essentialExpenses', 'monthlyDebtPayments', 'nearTermCommitments', 'emergencySavings', 'highCostDebt', 'stableIncome', 'monthlyContribution', 'riskTolerance', 'experience', 'portfolio'];
 export const questions: Record<Field, [string, string]> = {
+  goalAmount: ['¿Cuánto cuesta aproximadamente lo que quieres comprar?', 'Roughly how much does the purchase cost?'],
+  goalSavings: ['¿Cuánto tienes ya ahorrado para esta compra, sin contar tu colchón de imprevistos?', 'How much have you saved for this purchase, excluding your emergency reserve?'],
   goal: ['¿Qué te gustaría conseguir con tu dinero?', 'What would you like your money to help you achieve?'],
   horizonMonths: ['¿Dentro de cuánto tiempo necesitarás ese dinero?', 'How long before you will need that money?'],
   monthlyIncome: ['¿Cuánto ingresas al mes, aproximadamente?', 'Roughly how much do you earn each month?'],
@@ -17,7 +20,7 @@ export const questions: Record<Field, [string, string]> = {
   portfolio: ['¿Ya tienes inversiones? Puedes decirme que no, que están diversificadas o que se concentran en pocas empresas o sectores.', 'Do you already have investments: none, diversified, or concentrated in a few companies or sectors?'],
 };
 export function question(field: Field, language: Language) { return questions[field][language === 'es' ? 0 : 1]; }
-export function missing(profile: Profile) { return fields.filter(field => profile[field] === undefined); }
+export function missing(profile: Profile) { const relevant: Field[] = isPurchaseGoal(profile.goal) ? ['goal', 'horizonMonths', 'goalAmount', 'goalSavings', 'monthlyContribution'] : fields; return relevant.filter(field => profile[field] === undefined); }
 export function greeting(language: Language) {
   return language === 'es'
     ? 'Hola, soy KAI. Vamos a buscar un primer paso que encaje contigo, sin prisas. Puedes escribirme o hablar conmigo. ¿Qué te gustaría conseguir con tu dinero?'

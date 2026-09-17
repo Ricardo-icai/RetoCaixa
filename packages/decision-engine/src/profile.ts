@@ -1,3 +1,4 @@
+import { isPurchaseGoal, purchasePlan } from './purchase.ts';
 import type { Action, Profile } from '../../types/src/conversation.ts';
 
 export const demoProduct = Object.freeze({ id: 'DEMO-GLOBAL', name: 'Plan global simulado', horizonMonths: 60, minimumRisk: 40, annualCostPercent: 0.2, minimumContribution: 10, simulated: true });
@@ -27,6 +28,7 @@ export function decide(profile: Profile, context: DecisionContext, capacity = fi
   if (context.intent === 'panic') return { action: 'WAIT', reason: 'panic' };
   if (context.intent === 'education') return { action: 'LEARN', reason: 'education' };
   if (context.intent === 'market') return { action: 'WAIT', reason: 'market_unavailable' };
+  if (isPurchaseGoal(profile.goal) && !context.missing.length && purchasePlan(profile)) return { action: 'LEARN', reason: 'purchase_plan' };
   if (context.missing.length || !capacity.complete) return { action: 'ASK_CLARIFICATION', reason: 'missing' };
   if (!context.compliancePassed) return { action: 'WAIT', reason: 'compliance' };
   if (profile.horizonMonths! < demoProduct.horizonMonths) return { action: 'WAIT', reason: 'horizon' };

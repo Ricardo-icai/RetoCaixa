@@ -1,3 +1,4 @@
+import { acknowledgement, contextualQuestion, purchaseReply } from './dialogue.ts';
 import { randomUUID } from 'node:crypto';
 import type { AgentRun, Extraction, Language, Profile, Session, Turn } from './contracts.ts';
 import { interpret, type LanguageProvider } from './provider.ts';
@@ -34,13 +35,15 @@ export async function runTurn(previous: Session, text: string, options: { provid
   if (decision.action === 'ASK_CLARIFICATION') {
     const field = session.pending ?? previous.pending;
     const prefix = session.language === 'es'
-      ? extraction.uncertain ? 'No he podido interpretar ese dato con seguridad. ' : evaluation.quality.stale.length ? 'Vamos a actualizar ese dato. ' : Object.keys(extraction.facts).length ? 'Lo tengo. ' : 'Para orientarte necesito conocer un poco más tu situación. '
-      : extraction.uncertain ? 'I could not interpret that reliably. ' : evaluation.quality.stale.length ? 'Let’s update that information. ' : Object.keys(extraction.facts).length ? 'Got it. ' : 'I need a little more information about your situation. ';
-    reply = { text: prefix + (field ? question(field, session.language) : session.language === 'es' ? '¿Qué dato quieres revisar?' : 'Which detail would you like to review?') };
+      ? extraction.uncertain ? 'No he podido interpretar ese dato con seguridad. ' : evaluation.quality.stale.length ? 'Vamos a actualizar ese dato. ' : acknowledgement(extraction, session, previous)
+      : extraction.uncertain ? 'I could not interpret that reliably. ' : evaluation.quality.stale.length ? 'Let’s update that information. ' : acknowledgement(extraction, session, previous);
+    reply = { text: prefix + (field ? contextualQuestion(field, session) : session.language === 'es' ? '¿Qué dato quieres revisar?' : 'Which detail would you like to review?') };
+  } else if (decision.reason === 'purchase_plan') {
+    reply = { text: purchaseReply(session) };
   } else {
     reply = explain(decision, session.language, extraction.topic ?? text);
     // Education and caution do not lose the onboarding context. Never ask multiple questions.
-    if (session.pending && !['human', 'market_unavailable'].includes(decision.reason)) reply.text += '\n\n' + question(session.pending, session.language);
+    if (session.pending && !['human', 'market_unavailable'].includes(decision.reason)) reply.text += '\n\n' + contextualQuestion(session.pending, session);
   }
   runs.push({ id: 'experience-education', status: 'ok', output: reply, durationMs: 0 });
   const missingAgents = (Object.keys(agentContracts) as AgentRun['id'][]).filter(id => !runs.some(run => run.id === id));

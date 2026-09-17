@@ -99,5 +99,9 @@ export function useVoice(options: { language: 'es' | 'en'; onTranscript: (text: 
     return () => { mounted.current = false; stop(); };
   }, [stop]);
   useEffect(() => { stop(); }, [options.language, stop]);
-  return { supported, canSpeak, listening, speaking, conversation, error, start, stop, read, startConversation };
+  const finishDictation = useCallback(() => {
+    if (timer.current) clearTimeout(timer.current);
+    recognition.current?.stop();
+  }, []);
+  return { finishDictation, supported, canSpeak, listening, speaking, conversation, error, start, stop, read, startConversation };
 }

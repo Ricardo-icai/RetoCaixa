@@ -14,7 +14,7 @@ export async function interpret(text: string, session: Session, provider?: Langu
   try {
     const raw = await Promise.race([
       provider.extract({ systemPrompt: LANGUAGE_SYSTEM_PROMPT, text, pending: session.pending, language: session.language, history: session.messages.slice(-12).map(({ role, text }) => ({ role, text })), signal: controller.signal }),
-      new Promise<never>((_, reject) => { timeout = setTimeout(() => { controller.abort(); reject(new Error('provider_timeout')); }, 8000); }),
+      new Promise<never>((_, reject) => { timeout = setTimeout(() => { controller.abort(); reject(new Error('provider_timeout')); }, 3500); }),
     ]);
     if (!raw || typeof raw !== 'object' || Array.isArray(raw)) throw new Error('provider_schema');
     const result = raw as Extraction;

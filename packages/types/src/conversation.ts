@@ -10,6 +10,8 @@ export type LearningContext = {
 };
 export type Profile = {
   goal?: string;
+  goalAmount?: number;
+  goalSavings?: number;
   horizonMonths?: number;
   monthlyIncome?: number;
   essentialExpenses?: number;
