@@ -1,6 +1,7 @@
 export const interestTags = ['TECH', 'AI', 'NVDA', 'CRYPTO', 'BTC', 'FUNDS', 'ETF', 'BUDGET', 'BASICS', 'RISK', 'MARKETS'] as const;
 export type InterestTag = typeof interestTags[number];
 export type FeedPreferences = Partial<Record<InterestTag, 'hide' | 'show'>>;
+export type PreferenceUpdateEvent = { type: 'USER_PREFERENCE_UPDATE'; preferences: FeedPreferences };
 export type EngagementEvent = {
   type: 'USER_ENGAGEMENT_EVENT'; eventId: string; postId: string;
   watchTimeMs: number; completionRate: number;

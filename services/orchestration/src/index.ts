@@ -30,7 +30,8 @@ export async function runTurn(previous: Session, text: string, options: { provid
   runs.push({ id: 'voice-language', status: extraction.uncertain ? 'blocked' : 'ok', output: extraction, durationMs: performance.now() - start });
   updateProfile(session, extraction, timestamp);
   if (Object.keys(preferences).length) session.feedPreferences = { ...session.feedPreferences, ...preferences };
-  runs.push({ id: 'profile', status: 'ok', output: { profile: session.profile, provenance: session.provenance, revision: session.revision + 1 }, durationMs: 0 });
+  runs.push({ id: 'profile', status: 'ok', output: { profile: session.profile, provenance: session.provenance, revision: session.revision + 1,
+    ...(Object.keys(preferences).length ? { event: { type: 'USER_PREFERENCE_UPDATE', preferences } } : {}) }, durationMs: 0 });
   const evaluation = await evaluateAgents(session, extraction, runs, now);
   session.learning = updateLearningContext(session.learning, extraction, session.profile, evaluation.capacity);
   const decision = decide(session.profile, { missing: evaluation.quality.missing, stale: evaluation.quality.stale.length > 0, uncertain: !!extraction.uncertain, intent: Object.keys(preferences).length ? 'education' : extraction.intent, compliancePassed: evaluation.compliance.demoPassed }, evaluation.capacity, evaluation.risk);
