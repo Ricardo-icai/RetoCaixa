@@ -96,7 +96,7 @@ export default function Chat() {
       <KaiHeaderIcon />
       <div className="flex items-center gap-3"><label className="sr-only" htmlFor="language">Idioma / Language</label><select id="language" value={language} disabled={busy} onChange={event => { voice.stop(); setLanguage(event.target.value as Language); }} className="rounded-lg border border-white/15 bg-slate-900 px-2 py-2 text-sm"><option value="es">ES</option><option value="en">EN</option></select></div>
     </div></header>
-    <main className="mx-auto max-w-6xl px-4 pt-5 pb-64 md:px-6">
+    <main className="mx-auto max-w-6xl px-4 py-5 md:px-6">
       <p className="mb-5 rounded-xl border border-amber-300/15 bg-amber-300/5 px-4 py-3 text-xs text-amber-100/90">{en ? 'Demo without live market data or real transactions.' : 'Demo sin datos de mercado en directo ni operaciones reales.'}</p>
       <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_290px]">
         <section className="min-w-0 overflow-hidden rounded-3xl border border-white/10 bg-[#101b29]" aria-label={en ? 'Conversation with KAI' : 'Conversación con KAI'}>
@@ -121,6 +121,8 @@ export default function Chat() {
             {busy && <p className="text-xs text-emerald-200">{en ? 'KAI is reviewing your message…' : 'KAI está revisando tu mensaje…'}</p>}
             <div ref={end} />
           </div>
+          <KaiInteractiveChat value={draft} onChange={setDraft} onSubmit={send} busy={busy} ready={!!session} language={language} voice={voice} error={error}
+            onRefresh={() => { voice.stop(); load().catch(err => setError(err.message)); }} latestText={latest?.role === 'assistant' ? speechText(latest) : (en ? 'I’m listening.' : 'Te escucho.')} />
         </section>
         <aside className="space-y-4">
           <section className="rounded-3xl border border-white/10 bg-[#101b29] p-5"><KaiMascot state={state} isSpeaking={voice.speaking} /><h2 className="text-center text-lg font-semibold">KAI</h2></section>
@@ -131,8 +133,6 @@ export default function Chat() {
         </aside>
       </div>
     </main>
-    <KaiInteractiveChat value={draft} onChange={setDraft} onSubmit={send} busy={busy} ready={!!session} language={language} voice={voice} error={error}
-      onRefresh={() => { voice.stop(); load().catch(err => setError(err.message)); }} latestText={latest?.role === 'assistant' ? speechText(latest) : (en ? 'I’m listening.' : 'Te escucho.')} />
     <dialog ref={dialog} onCancel={() => setConfirmation(null)} className="w-full max-w-md rounded-3xl border border-white/15 bg-slate-900 p-6 text-slate-100 backdrop:bg-black/70" aria-labelledby="confirm-title">
       <h2 id="confirm-title" className="text-lg font-semibold">{en ? 'Review your simulation' : 'Revisa tu simulación'}</h2><p className="my-5 text-3xl">{currency(confirmation?.advice?.amount ?? 0, language)}</p><p className="text-sm leading-6 text-slate-300">{en ? 'Demo global plan · Minimum horizon: 5 years · Illustrative annual cost: 0.20%.' : 'Plan global de ejemplo · Plazo mínimo: 5 años · Coste anual ilustrativo: 0,20 %.'}</p><p className="mt-4 text-sm leading-6 text-amber-100">{confirmation?.advice?.risk}</p><p className="mt-3 text-xs text-slate-400">{en ? 'Only the simulation balance changes. No money is sent to a bank or broker.' : 'Solo cambia el saldo de la simulación. No se envía dinero a un banco o bróker.'}</p><div className="mt-6 flex justify-end gap-3"><button disabled={busy} onClick={() => setConfirmation(null)} className="rounded-xl px-3 py-3 text-sm">{en ? 'Cancel' : 'Cancelar'}</button><button disabled={busy} onClick={async () => { await mutate({ operation: 'simulate', recommendationId: confirmation?.id, confirmed: true }); setConfirmation(null); }} className="rounded-xl bg-emerald-300 px-4 py-3 text-sm font-semibold text-slate-950 disabled:opacity-40">{en ? 'Confirm simulation' : 'Confirmar simulación'}</button></div>
     </dialog>

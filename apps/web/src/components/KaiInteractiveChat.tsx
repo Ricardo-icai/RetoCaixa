@@ -12,7 +12,6 @@ export function KaiInteractiveChat({ value, onChange, onSubmit, busy, ready, lan
   const en = language === 'en';
   const input = useRef<HTMLTextAreaElement>(null);
   const [slow, setSlow] = useState(false);
-  const [keyboardInset, setKeyboardInset] = useState(0);
   useEffect(() => {
     if (!input.current) return;
     input.current.style.height = 'auto';
@@ -24,18 +23,12 @@ export function KaiInteractiveChat({ value, onChange, onSubmit, busy, ready, lan
     const timer = setTimeout(() => setSlow(true), 5000);
     return () => clearTimeout(timer);
   }, [busy]);
-  useEffect(() => {
-    const viewport = window.visualViewport;
-    const resize = () => setKeyboardInset(viewport ? Math.max(0, window.innerHeight - viewport.height - viewport.offsetTop) : 0);
-    viewport?.addEventListener('resize', resize); viewport?.addEventListener('scroll', resize);
-    return () => { viewport?.removeEventListener('resize', resize); viewport?.removeEventListener('scroll', resize); };
-  }, []);
   async function submit() {
     if (!value.trim() || busy || !ready || voice.listening || voice.conversation) return;
     voice.stop(); await onSubmit(value);
     input.current?.focus({ preventScroll: true });
   }
-  return <div className="fixed inset-x-0 z-[60] mx-auto w-full max-w-3xl px-3 pb-2" style={{ bottom: keyboardInset > 100 ? keyboardInset + 8 : 'calc(5rem + env(safe-area-inset-bottom))' }}>
+  return <div className="w-full border-t border-white/10 p-3 sm:p-4">
     {(error || voice.error) && <div role="alert" className="mb-2 rounded-2xl border border-rose-300/20 bg-slate-950/95 p-3 text-xs text-rose-200">{error || voice.error}{error && <button type="button" disabled={busy} onClick={onRefresh} className="ml-2 underline">{en ? 'Refresh conversation' : 'Actualizar conversación'}</button>}</div>}
     <div className="rounded-3xl border border-slate-700 bg-slate-900/90 p-2 shadow-[0_-8px_40px_rgba(0,0,0,0.25)] backdrop-blur-xl focus-within:border-cyan-300/40">
       {busy && <p role="status" className="px-3 pb-2 pt-1 text-xs text-cyan-200">{slow ? (en ? 'This is taking longer than expected. Your message is still being processed…' : 'Está tardando más de lo previsto. Tu mensaje sigue en proceso…') : (en ? 'KAI is reviewing your message…' : 'KAI está revisando tu mensaje…')}</p>}

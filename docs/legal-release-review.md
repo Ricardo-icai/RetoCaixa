@@ -97,6 +97,8 @@ Mismos datos y territorios de la demo, sin nuevos proveedores. La voz sigue usan
 
 ## Conversación contextual para objetivos de compra · 2026-09-17
 
+Ajuste visual del chat: la entrada de texto y voz queda dentro del panel, debajo del historial desplazable, en lugar de flotar sobre los mensajes. Aplicable a la misma demo y territorios; no cambia datos, operaciones, consentimientos ni documentos aceptados. Se mantienen los requisitos jurídicos y operativos pendientes descritos en esta revisión.
+
 Se amplía la interpretación local de objetivos expresados libremente, incluyendo compras y errores de escritura habituales. Para compras, el flujo pide plazo, precio, ahorro reservado y aportación mensual; conserva varios datos declarados en un mensaje y calcula la diferencia y el ahorro mensual necesario. Estos importes forman parte de la información financiera voluntaria de conversación ya contemplada; no se añaden proveedores ni mercados, y no cambian los documentos ni sus versiones.
 
 El cálculo usa estimaciones del usuario, sin asumir rentabilidades, capacidad de gasto verificada ni financiación. No publica estos importes. Se mantienen los controles de incertidumbre, deuda y datos inválidos. Cambiar de objetivo borra supuestos de plazo, precio, ahorro y aportación anteriores. Continúan pendientes las garantías jurídicas y operativas de producción; la interpretación sigue siendo local y acotada, no comprensión universal del lenguaje.
