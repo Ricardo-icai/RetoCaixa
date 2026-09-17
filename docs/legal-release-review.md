@@ -75,3 +75,14 @@ Alcance: mismos países y demo educativa; no se añaden mercados, destinatarios,
 Verificación técnica: TypeScript, pruebas de API/edad/aceptación y recorrido automatizado en navegador para móvil y escritorio. Se revisan selección múltiple, privacidad inicial, conservación al retroceder, nacionalidad por ratón/teclado, fechas imposibles y menores, envío, verificación y recarga. Animaciones con respeto a la preferencia de movimiento reducido.
 
 Resultado comprobado: 19 pruebas de servidor correctas, TypeScript y compilación de producción correctos. Chrome automatizado a 390×844 y 1280×844 completó alta y verificación, mantuvo datos al retroceder, validó errores de edad/fecha y recarga final, sin excepciones de JavaScript ni desbordamiento horizontal. Se revisaron capturas de objetivos y datos. El indicador de desarrollo se mueve arriba a la derecha para no interceptar Atrás en móvil. No se ha realizado auditoría exhaustiva en otros navegadores o con lectores de pantalla.
+
+
+## Edición y vista de perfil · 2026-09-17
+
+Función: edición de nombre, alias único, biografía (150 caracteres), etiqueta opcional de intereses y foto opcional. El avatar se normaliza a JPEG de 256 píxeles sin metadatos, con límites de tamaño y dimensiones. Datos guardados en el Map de sesión existente, no almacenamiento duradero. Lectura pública solo para perfiles públicos con verificación simulada; el propietario puede revisar el suyo. Las ediciones requieren aceptación vigente, CSRF y revisión del perfil; no admiten elegir otro propietario.
+
+Misma demo y territorios sin nuevos mercados u operaciones financieras. No se infiere idoneidad de una etiqueta. Los creadores ficticios muestran cartera y rentabilidad expresamente inventadas; los miembros no exponen cartera, fecha, nacionalidad ni información financiera del chat. No se afirma identidad verificada. Reels reutilizan los vídeos de muestra ya existentes; la mensajería entre miembros se indica como no disponible y no envía nada.
+
+Privacidad pasa a 2026-09-17.1 por los nuevos datos de identidad visual, con archivo inmutable de la versión anterior. La base jurídica, necesidad/retención de fotos, responsable jurídico, moderación de fotos/biografías, revisión territorial, autenticación permanente y derechos de producción siguen pendientes. Se mantienen los controles de edad y las restantes condiciones; no se activa biometría ni hay nuevos proveedores de fotos.
+
+Comprobación técnica: 14 pruebas de perfil/API/privacidad/red correctas, TypeScript y compilación de producción correctos. Chrome a 390 y 1280 píxeles verifica carga de foto, guardado y recarga, cancelación, separación entre perfiles privados/públicos, seguimiento persistente, pestañas y vídeos de muestra. Sin excepciones de JavaScript ni desbordamiento horizontal en esos recorridos. Se revisaron capturas; otros navegadores, lectores de pantalla y revisión jurídica de producción quedan pendientes.

@@ -9,7 +9,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   const { pathname } = useRouter();
   // Route-derived state keeps direct links, refresh and browser history in sync.
   const activeTab = selectedMainTab(pathname);
-  const showNavigation = pathname !== '/' && pathname !== '/verify-identity';
+  const showNavigation = pathname !== '/' && pathname !== '/verify-identity' && pathname !== '/settings/profile';
   return <div className="relative mx-auto min-h-dvh w-full max-w-md bg-slate-950 text-slate-100 md:max-w-7xl">
     {showNavigation && <div className="flex items-center justify-between border-b border-white/5 px-5 py-2 text-xs">
       <span className="tracking-wide text-slate-400">STOXIA SOCIAL <span className="ml-2 text-emerald-300">Demo</span></span>

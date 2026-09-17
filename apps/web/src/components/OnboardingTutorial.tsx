@@ -37,7 +37,7 @@ export function OnboardingTutorial() {
   const nextButton = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
-    if (!router.isReady || router.pathname === '/' || router.pathname === '/verify-identity' || router.pathname.startsWith('/legal') || router.pathname === '/settings') {
+    if (!router.isReady || router.pathname === '/' || router.pathname === '/verify-identity' || router.pathname.startsWith('/legal') || router.pathname.startsWith('/settings')) {
       setVisible(false);
       return;
     }

@@ -1,5 +1,5 @@
 // Keep published versions immutable; archive their text before changing these identifiers.
-export const legalVersions = { terms: '2026-09-16.2', privacy: '2026-09-17.1', risk: '2026-09-16.1' } as const;
+export const legalVersions = { terms: '2026-09-16.2', privacy: '2026-09-16.3', risk: '2026-09-16.1' } as const;
 export type LegalAcceptance = {
   versions: { terms: string; privacy: string; risk: string };
   acceptedAt: string;

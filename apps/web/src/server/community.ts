@@ -1,3 +1,4 @@
+import { investmentTags, type Persona, type ProfileDetail } from '../community/persona.ts';
 import { randomUUID } from 'node:crypto';
 import { birthDateError, demoToday } from '../legal/age.ts';
 import { currentLegalAcceptance, validLegalSubmission, legalVersions, type LegalAcceptance } from '../legal/policy.ts';
@@ -14,6 +15,7 @@ type PostRecord = {
   helpfulBy: Set<string>; replies: ReplyRecord[];
 };
 export type Viewer = {
+  persona?: Persona; personaRevision?: number;
   id: string; label: string; csrfToken: string; actions: number[]; subscriptions: Set<string>;
   kycStatus: KycStatus; identityVerified: boolean; visibility: 'PUBLIC' | 'PRIVATE';
   countryCode?: string; nationality?: string; goals: InvestorGoal[]; consentedAt?: string; legalAcceptance?: LegalAcceptance;
@@ -185,7 +187,7 @@ export function mutateCommunity(viewer: Viewer, body: Record<string, unknown>, c
   return communitySnapshot(viewer, chatSessionId);
 }
 
-function profileFor(id: string, viewer: Viewer): SocialProfile {
+export function profileFor(id: string, viewer: Viewer): SocialProfile {
   const channel = channels.find(item => item.id === id);
   const member = store.viewers.get(id);
   if (!channel && (!member || (member.id !== viewer.id && (member.visibility !== 'PUBLIC' || member.kycStatus !== 'VERIFIED')))) throw new CommunityError(404, 'Este perfil no está disponible.');
@@ -216,4 +218,35 @@ export function socialSnapshot(viewer: Viewer, chatSessionId?: string): SocialSn
   const creators = channels.map(item => profileFor(item.id, viewer)).sort((a, b) => Number(a.following) - Number(b.following) || Number(priorities.includes(channelTopic[b.id] as CommunityTopic)) - Number(priorities.includes(channelTopic[a.id] as CommunityTopic)));
   const members = [...store.viewers.values()].filter(item => item.id !== viewer.id && item.visibility === 'PUBLIC' && item.kycStatus === 'VERIFIED').slice(0, 40).map(item => profileFor(item.id, viewer));
   return { me: profileFor(viewer.id, viewer), creators, members, csrfToken: viewer.csrfToken };
+}
+
+
+export function profileDetail(viewer: Viewer, id = viewer.id): ProfileDetail {
+  const profile = profileFor(id, viewer);
+  const channel = channels.find(item => item.id === id);
+  const member = store.viewers.get(id);
+  const persona: Persona = member?.persona ?? { handle: channel ? channel.id.replaceAll('-', '_') : `kai_${id.replaceAll('-', '')}`, bio: channel?.bio ?? '', avatar: null, investmentTag: null };
+  const reels = channel ? store.posts.filter(post => post.channelId === id).map(reelFromPost).filter((item): item is Reel => !!item).map(item => ({ id: item.id, title: item.title, text: item.text, videoUrl: item.videoUrl })) : [];
+  return { profile: { ...profile, ...persona }, mine: viewer.id === id, visibility: channel ? 'PUBLIC' : member!.visibility, revision: member?.personaRevision ?? 0, csrfToken: viewer.csrfToken, fictional: !!channel,
+    holdings: channel ? [{ symbol: 'Fondo global · ejemplo', weight: 70 }, { symbol: 'Bonos · ejemplo', weight: 20 }, { symbol: 'Efectivo · ejemplo', weight: 10 }] : [], return1Y: channel ? 4.2 : null, reels };
+}
+
+export function updatePersona(viewer: Viewer, body: Record<string, unknown>, avatar: string | null): ProfileDetail {
+  if (!currentLegalAcceptance(viewer.legalAcceptance)) throw new CommunityError(403, 'Revisa y acepta las condiciones vigentes antes de guardar tu perfil.');
+  if (body.revision !== (viewer.personaRevision ?? 0)) throw new CommunityError(409, 'El perfil ha cambiado. Recarga la página antes de volver a editarlo.');
+  const name = textField(body.name, 2, 50, 'Nombre');
+  if (typeof body.handle !== 'string' || !/^[a-zA-Z0-9_]{3,36}$/.test(body.handle)) throw new CommunityError(400, 'Usuario: usa entre 3 y 36 letras sin tildes, números o guiones bajos.');
+  const handle = body.handle.toLowerCase();
+  if (channels.some(channel => channel.id.replaceAll('-', '_') === handle) || [...store.viewers.values()].some(member => member.id !== viewer.id && (member.persona?.handle ?? `kai_${member.id.replaceAll('-', '')}`) === handle)) throw new CommunityError(409, 'Usuario: ese nombre ya está en uso. Elige otro.');
+  if (typeof body.bio !== 'string' || body.bio.length > 150) throw new CommunityError(400, 'Biografía: escribe como máximo 150 caracteres.');
+  if (body.investmentTag !== null && !investmentTags.includes(body.investmentTag as typeof investmentTags[number])) throw new CommunityError(400, 'Estilo: elige una de las opciones disponibles.');
+  viewer.label = name;
+  viewer.persona = { handle, bio: body.bio.trim(), avatar, investmentTag: body.investmentTag as Persona['investmentTag'] };
+  viewer.personaRevision = (viewer.personaRevision ?? 0) + 1;
+  // Keep the author's public name consistent on content already published.
+  for (const post of store.posts) {
+    if (post.owner === viewer.id) post.author = name;
+    for (const reply of post.replies) if (reply.owner === viewer.id) reply.author = name;
+  }
+  return profileDetail(viewer);
 }
