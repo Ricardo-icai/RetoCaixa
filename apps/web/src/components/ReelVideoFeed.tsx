@@ -5,9 +5,11 @@ import { KaiHeaderIcon } from './KaiHeaderIcon';
 import { FollowButton } from './FollowButton';
 import { TradeTicket } from './TradeTicket';
 import { money } from '../market/trading';
+import { useDwellTimeTracker } from '../hooks/useDwellTimeTracker';
 
 function ReelCard({ reel, active, suspended, snapshot, onRefresh, onTrade }: { reel: Reel; active: boolean; suspended: boolean; snapshot: CommunitySnapshot; onRefresh: () => void; onTrade: (copy: boolean) => void }) {
   const video = useRef<HTMLVideoElement>(null);
+  useDwellTimeTracker(reel.id, video, snapshot.personalization.enabled && !suspended, snapshot.csrfToken, snapshot.personalization.expiresAt);
   const [muted, setMuted] = useState(true);
   const [paused, setPaused] = useState(false);
   useEffect(() => { if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) setPaused(true); }, []);
@@ -44,6 +46,12 @@ export function ReelVideoFeed({ snapshot, onRefresh }: { snapshot: CommunitySnap
   const [active, setActive] = useState(0);
   const [trade, setTrade] = useState<{ reel: Reel; copying: boolean } | null>(null);
   const [notice, setNotice] = useState('');
+  const [updates, setUpdates] = useState(false);
+  useEffect(() => {
+    const updated = () => setUpdates(true);
+    window.addEventListener('kai:feed-updated', updated);
+    return () => window.removeEventListener('kai:feed-updated', updated);
+  }, []);
   const ids = snapshot.reels.map(reel => reel.id).join(',');
   useEffect(() => {
     const root = viewport.current;
@@ -58,6 +66,8 @@ export function ReelVideoFeed({ snapshot, onRefresh }: { snapshot: CommunitySnap
   return <section aria-label="Reels personalizados" className="mx-auto max-w-xl">
     <div className="mb-3 flex items-center justify-between gap-3 px-4 text-xs text-slate-400"><p>{snapshot.reelFeed.mode === 'personalized' ? `${snapshot.reelFeed.preview.personalized} para ti · ${snapshot.reelFeed.preview.discovery} para descubrir` : 'Descubre y aprende con KAI'}</p><span>{Math.min(active + 1, snapshot.reels.length)}/{snapshot.reels.length}</span></div>
     {notice && <p role="status" className="mb-3 px-4 text-xs text-emerald-200">{notice}</p>}
+    <div className="mb-3 flex flex-wrap items-center justify-between gap-3 px-4 text-xs"><a href="/settings#feed-personalization" className="text-slate-400 underline">Preferencias del feed</a>{updates && <button type="button" onClick={() => { setUpdates(false); onRefresh(); }} className="text-emerald-200">Actualizar reels</button>}</div>
+    {!snapshot.reels.length && <p className="px-4 py-6 text-sm text-slate-300">No hay reels disponibles con tus preferencias actuales.</p>}
     <div ref={viewport} tabIndex={0} aria-label="Desliza verticalmente para cambiar de reel" onKeyDown={event => {
       if (event.target !== event.currentTarget || !['ArrowDown', 'ArrowUp'].includes(event.key)) return;
       event.preventDefault(); viewport.current?.scrollBy({ top: (event.key === 'ArrowDown' ? 1 : -1) * viewport.current.clientHeight, behavior: 'smooth' });

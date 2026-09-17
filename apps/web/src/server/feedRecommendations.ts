@@ -1,8 +1,9 @@
 import type { LearningContext, LearningFocus, LearningReason } from '../../../../packages/types/src/conversation.ts';
 import type { CommunityPost, CommunitySnapshot, CommunityTopic, InvestorGoal } from '../community/types.ts';
 import { findSession } from './sessions.ts';
+import { contentTags, type InterestTag } from '../../../../packages/types/src/social.ts';
 
-type Plan = { focus: LearningFocus[]; source: CommunitySnapshot['feed']['source'] };
+type Plan = { focus: LearningFocus[]; source: CommunitySnapshot['feed']['source']; affinities?: Partial<Record<InterestTag, number>>; excluded?: InterestTag[] };
 const goalTopics: Partial<Record<InvestorGoal, CommunityTopic>> = {
   'Gestionar mi dinero': 'Gestionar dinero', 'Crear mi colchón': 'Gestionar dinero',
   'Aprender a invertir': 'Primeros pasos', 'Invertir a largo plazo': 'Fondos', 'Seguir inversores': 'Mercados',
@@ -15,7 +16,7 @@ const reasons: Record<LearningReason, string> = {
   risk: 'Para comprender el riesgo y tomar decisiones con calma',
 };
 
-export function learningPlan(goals: InvestorGoal[], sessionId?: string): Plan {
+export function learningPlan(goals: InvestorGoal[], sessionId?: string, affinities?: Plan['affinities']): Plan {
   const ranked = new Map<CommunityTopic, LearningFocus>();
   const add = (focus: LearningFocus) => {
     if (focus.weight > (ranked.get(focus.topic)?.weight ?? 0)) ranked.set(focus.topic, { ...focus });
@@ -41,7 +42,8 @@ export function learningPlan(goals: InvestorGoal[], sessionId?: string): Plan {
   // Leave other themes available for discovery even after discussing many topics.
   const threshold = Math.max(4, (ordered[0]?.weight ?? 0) * 0.55);
   const focus = ordered.filter(item => item.weight >= threshold).slice(0, 2);
-  return { focus, source: focus.length ? source : 'none' };
+  const excluded = Object.entries(entry?.session.feedPreferences ?? {}).filter(([, value]) => value === 'hide').map(([tag]) => tag as InterestTag);
+  return { focus, source: focus.length ? source : 'none', affinities, excluded };
 }
 
 // Seven goal slots and three discovery slots in each ten, with no repeated posts.
@@ -51,7 +53,7 @@ export function recommendFeed<T extends Pick<CommunityPost, 'id' | 'topic' | 'cr
   posts: T[], plan: Plan, following: ReadonlySet<string> = new Set(),
 ): { posts: Array<T & { recommendation: NonNullable<CommunityPost['recommendation']> }>; feed: CommunitySnapshot['feed'] } {
   const focuses = new Map(plan.focus.map(item => [item.topic, item]));
-  const unique = [...new Map(posts.map(post => [post.id, post])).values()];
+  const unique = [...new Map(posts.map(post => [post.id, post])).values()].filter(post => !contentTags(post).some(tag => plan.excluded?.includes(tag)));
   const personal = unique.filter(post => focuses.has(post.topic));
   const discovery = unique.filter(post => !focuses.has(post.topic));
   const topicUses = new Map<CommunityTopic, number>();
@@ -60,7 +62,8 @@ export function recommendFeed<T extends Pick<CommunityPost, 'id' | 'topic' | 'cr
   const score = (post: T, personalized: boolean) =>
     (personalized ? focuses.get(post.topic)!.weight : 0) - (topicUses.get(post.topic) ?? 0) * 2
     - (post.channelId ? (creatorUses.get(post.channelId) ?? 0) * 0.5 : 0)
-    + (post.channelId && following.has(post.channelId) ? 0.5 : 0);
+    + (post.channelId && following.has(post.channelId) ? 0.5 : 0)
+    + Math.min(3, contentTags(post).reduce((sum, tag) => sum + (plan.affinities?.[tag] ?? 0), 0) / 3);
 
   while (personal.length || discovery.length) {
     const preferPersonal = personalizedSlots[selected.length % 10] && focuses.size > 0;
@@ -72,7 +75,7 @@ export function recommendFeed<T extends Pick<CommunityPost, 'id' | 'topic' | 'cr
     if (post.channelId) creatorUses.set(post.channelId, (creatorUses.get(post.channelId) ?? 0) + 1);
     selected.push({ ...post, recommendation: {
       kind: isPersonal ? 'personalized' : 'discovery',
-      reason: isPersonal ? reasons[focuses.get(post.topic)!.reason] : 'Un tema distinto para ampliar lo que aprendes',
+      reason: contentTags(post).some(tag => (plan.affinities?.[tag] ?? 0) > 0) ? 'Relacionado con los reels que has visto; personalización opcional' : isPersonal ? reasons[focuses.get(post.topic)!.reason] : 'Un tema distinto para ampliar lo que aprendes',
     } });
   }
   const preview = selected.slice(0, 10);

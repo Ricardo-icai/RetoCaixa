@@ -45,6 +45,7 @@ export type CommunityPost = {
 };
 
 export type CommunitySnapshot = {
+  personalization: { enabled: boolean; consentedAt: number | null; expiresAt: number | null; excludedTags: import('../../../../packages/types/src/social.ts').InterestTag[] };
   reels: Reel[];
   reelFeed: CommunitySnapshot['feed'];
   feed: {

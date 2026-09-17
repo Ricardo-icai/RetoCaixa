@@ -1,6 +1,6 @@
 import { validateKaiOnboarding, onboardingSummary } from '../community/kaiOnboarding.ts';
 import { randomUUID } from 'node:crypto';
-import { createSession, runTurn } from '../../../../services/orchestration/src/index.ts';
+import { createSession, runTurn, MultiAgentOrchestrator } from '../../../../services/orchestration/src/index.ts';
 import { evaluateAgents } from '../../../../services/orchestration/src/agents.ts';
 import { decide } from '../../../../packages/decision-engine/src/profile.ts';
 import type { Language, PublicSession, SavedConversation, Session, Trace } from '../../../../packages/types/src/conversation.ts';
@@ -8,6 +8,7 @@ import type { Language, PublicSession, SavedConversation, Session, Trace } from 
 export type Entry = { session: Session; csrfToken: string; traces: Trace[]; provider: Trace['provider']; busy: boolean; requests: number[]; savedConversations: SavedConversation[] };
 const globalSessions = globalThis as typeof globalThis & { kaiSessions?: Map<string, Entry> };
 const sessions = globalSessions.kaiSessions ??= new Map<string, Entry>();
+const orchestrator = new MultiAgentOrchestrator();
 export class HttpError extends Error {
   status: number;
   constructor(status: number, message: string) {
@@ -51,7 +52,7 @@ export async function mutate(entry: Entry, body: Record<string, unknown>) {
     const language = body.language === 'en' ? 'en' : body.language === 'es' ? 'es' : entry.session.language;
     if (body.operation === 'reset') {
       const fresh = createSession(language);
-      entry.session = { ...fresh, id: entry.session.id, revision: entry.session.revision + 1 };
+      entry.session = { ...fresh, feedPreferences: entry.session.feedPreferences, id: entry.session.id, revision: entry.session.revision + 1 };
       entry.traces = [];
       entry.provider = 'demo';
       return;
@@ -72,7 +73,7 @@ export async function mutate(entry: Entry, body: Record<string, unknown>) {
         learning: entry.session.learning ? structuredClone(entry.session.learning) : undefined,
       });
       const fresh = createSession(language, now);
-      entry.session = { ...fresh, id: entry.session.id, revision: entry.session.revision + 1 };
+      entry.session = { ...fresh, feedPreferences: entry.session.feedPreferences, id: entry.session.id, revision: entry.session.revision + 1 };
       entry.traces = [];
       entry.provider = 'demo';
       return;
@@ -98,7 +99,7 @@ export async function mutate(entry: Entry, body: Record<string, unknown>) {
     }
     if (body.operation === 'message') {
       if (typeof body.text !== 'string' || !body.text.trim() || body.text.length > 2000) throw new HttpError(400, 'Escribe un mensaje de entre 1 y 2000 caracteres.');
-      const turn = await runTurn(entry.session, body.text.trim(), { language });
+      const turn = await orchestrator.processUserInteraction(entry.session, { type: 'CHAT_MESSAGE', text: body.text.trim() }, { language });
       entry.session = turn.session;
       entry.provider = turn.provider;
       entry.traces = [...entry.traces, turn.trace].slice(-30);

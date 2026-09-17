@@ -78,7 +78,7 @@ test('nationality is required, bounded, trimmed and independent of residence', (
 test('the previous privacy version requires renewed acceptance', () => {
   const viewer = getViewer();
   const body = submission();
-  body.legalVersions.privacy = '2026-09-16.2';
+  body.legalVersions.privacy = '2026-09-17.1';
   assert.throws(() => mutateCommunity(viewer, body), error => error.status === 400);
   assert.equal(viewer.legalAcceptance, undefined);
 });

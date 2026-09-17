@@ -31,6 +31,7 @@ export type Action = 'INVEST' | 'KEEP' | 'WAIT' | 'REDUCE' | 'REBALANCE' | 'LEAR
 export type Message = { id: string; role: 'user' | 'assistant'; text: string; timestamp: string; advice?: Advice };
 export type Advice = { action: Action; reasons: string[]; risk: string; amount?: number; annualCostPercent?: number; label: string };
 export type Session = {
+  feedPreferences?: import('./social.ts').FeedPreferences;
   id: string;
   language: Language;
   profile: Profile;

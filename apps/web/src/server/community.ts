@@ -7,6 +7,8 @@ import { learningPlan, recommendFeed } from './feedRecommendations.ts';
 import { learningContent } from '../community/learningContent.ts';
 import type { FollowersView, SocialProfile, SocialSnapshot } from '../community/socialTypes.ts';
 import { reelFromPost, type Reel } from '../community/reels.ts';
+import type { BehaviourMemory } from '../../../../packages/types/src/social.ts';
+import { activeBehaviour, personalizationStatus } from './personalization.ts';
 
 type ReplyRecord = { id: string; owner: string; author: string; text: string; createdAt: string };
 type PostRecord = {
@@ -15,6 +17,7 @@ type PostRecord = {
   helpfulBy: Set<string>; replies: ReplyRecord[];
 };
 export type Viewer = {
+  behaviour?: BehaviourMemory;
   persona?: Persona; personaRevision?: number;
   id: string; label: string; csrfToken: string; actions: number[]; subscriptions: Set<string>;
   kycStatus: KycStatus; identityVerified: boolean; visibility: 'PUBLIC' | 'PRIVATE';
@@ -89,9 +92,11 @@ export function hasCompletedOnboarding(id?: string): boolean {
 }
 
 export function communitySnapshot(viewer: Viewer, chatSessionId?: string): CommunitySnapshot {
-  const { posts: personalizedPosts, feed } = recommendFeed(store.posts, learningPlan(viewer.goals, chatSessionId), viewer.subscriptions);
-  const reels = recommendFeed(store.posts.map(reelFromPost).filter((reel): reel is Reel => !!reel), learningPlan(viewer.goals, chatSessionId), viewer.subscriptions);
+  const plan = learningPlan(viewer.goals, chatSessionId, activeBehaviour(viewer)?.affinities);
+  const { posts: personalizedPosts, feed } = recommendFeed(store.posts, plan, viewer.subscriptions);
+  const reels = recommendFeed(store.posts.map(reelFromPost).filter((reel): reel is Reel => !!reel), plan, viewer.subscriptions);
   return {
+    personalization: personalizationStatus(viewer, chatSessionId),
     reels: reels.posts.slice(0, 10), reelFeed: reels.feed,
     feed,
     viewer: viewer.label,
@@ -107,6 +112,11 @@ export function communitySnapshot(viewer: Viewer, chatSessionId?: string): Commu
       replies: post.replies.map(reply => ({ id: reply.id, author: reply.author, text: reply.text, createdAt: reply.createdAt, mine: reply.owner === viewer.id })),
     })),
   };
+}
+
+export function catalogueReel(id: string): Reel | undefined {
+  const post = store.posts.find(item => item.id === id);
+  return post ? reelFromPost(post) : undefined;
 }
 
 function textField(value: unknown, min: number, max: number, label: string): string {
