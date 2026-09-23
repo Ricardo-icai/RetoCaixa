@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import type { AssetSearchResult } from '../market/types';
 import { decimal, money, percent, riskFor, type PortfolioView, type TradePreview } from '../market/trading';
+import { LiveAssetChart } from './LiveAssetChart';
 
 export function TradeTicket({ asset, copying = false, onClose, onBought }: { asset: AssetSearchResult; copying?: boolean; onClose: () => void; onBought?: (portfolio: PortfolioView) => void }) {
   const dialog = useRef<HTMLDialogElement>(null);
@@ -60,6 +61,7 @@ export function TradeTicket({ asset, copying = false, onClose, onBought }: { ass
   return <dialog ref={dialog} onCancel={event => { if (busy) event.preventDefault(); else onClose(); }} aria-labelledby="trade-title" className="max-h-[calc(100dvh-2rem)] w-[calc(100vw-2rem)] max-w-xl overflow-y-auto rounded-3xl border border-white/15 bg-slate-900 p-5 text-slate-100 backdrop:bg-slate-950/85 sm:p-7" data-swipe-ignore>
     <div className="flex items-start justify-between gap-3"><div><p className="text-xs text-emerald-300">{copying ? 'Copiar en simulación' : 'Compra virtual'} · Sin dinero real</p><h2 id="trade-title" className="mt-2 text-2xl font-semibold">{asset.symbol}</h2><p className="mt-1 text-sm text-slate-400">{asset.name} · {asset.exchange}</p></div><button disabled={busy} onClick={onClose} aria-label="Cerrar compra" className="rounded-lg px-3 py-2 text-xl disabled:opacity-40">×</button></div>
     {copying && <p className="mt-4 text-xs leading-5 text-amber-200">Copiar prepara este activo con el importe que tú elijas. No replica una cartera ni acredita los resultados de un creador.</p>}
+    <div className="mt-5"><LiveAssetChart asset={asset} initialQuote={quote} /></div>
     <label className="mt-5 block text-sm">Importe en euros<input type="number" min="1" max="10000" step="0.01" value={amount} disabled={busy} onChange={event => { setAmount(event.target.value); setPreview(null); setReviewed(false); }} className="mt-2 w-full rounded-xl border border-white/15 bg-slate-950 p-3" /></label>
     <div className="mt-2 flex gap-2">{[25, 50, 100].map(value => <button key={value} type="button" disabled={busy} onClick={() => { setAmount(String(value)); setPreview(null); setReviewed(false); }} className="rounded-lg border border-white/10 px-4 py-2 text-xs">{value} €</button>)}</div>
     {!preview || expired ? <button disabled={!csrfToken || busy || !Number.isFinite(Number(amount)) || Number(amount) < 1} onClick={() => void review()} className="mt-4 w-full rounded-xl bg-emerald-300 p-3 font-semibold text-slate-950 disabled:opacity-40">{busy ? 'Consultando…' : expired ? 'Actualizar información' : 'Revisar activo y precio'}</button> : null}

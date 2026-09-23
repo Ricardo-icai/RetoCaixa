@@ -1,4 +1,4 @@
-import type { AnnualReturn, AssetQuote, AssetSearchResponse, AssetSearchResult } from '../market/types.ts';
+import type { AnnualReturn, AssetHistory, AssetQuote, AssetSearchResponse, AssetSearchResult, ChartPeriod } from '../market/types.ts';
 import { discoveryAssets, normalizeSearch, sectorMatches } from '../market/catalogue.ts';
 
 const baseUrl = 'https://api.twelvedata.com';
@@ -18,6 +18,48 @@ const demoAssets: Array<AssetSearchResult & { price: number; change: number; per
 
 const globalCache = globalThis as typeof globalThis & { kaiMarketCache?: Map<string, { expires: number; value: unknown }> };
 const cache = globalCache.kaiMarketCache ??= new Map();
+const historyPending = new Map<string, Promise<AssetHistory>>();
+const chartPeriods = {
+  '1D': { interval: '5min', outputsize: '288', days: 1 },
+  '1W': { interval: '30min', outputsize: '336', days: 7 },
+  '1M': { interval: '1day', outputsize: '32', days: 31 },
+  '1Y': { interval: '1day', outputsize: '370', days: 366 },
+} as const;
+
+export async function getAssetHistory(asset: AssetSearchResult, period: ChartPeriod, apiKey = process.env.TWELVE_DATA_API_KEY): Promise<AssetHistory> {
+  if (!Object.hasOwn(chartPeriods, period)) throw new Error('Periodo no válido.');
+  const settings = chartPeriods[period];
+  const base = { symbol: asset.symbol, exchange: asset.exchange, currency: asset.currency, period, interval: settings.interval, timezone: period === '1D' || period === '1W' ? 'UTC' : 'Exchange' };
+  if (!apiKey) return { ...base, points: [], configured: false, source: 'illustrative', fetchedAt: new Date().toISOString() };
+  const parameters = { symbol: asset.symbol, exchange: asset.exchange, ...(asset.micCode ? { mic_code: asset.micCode } : {}), interval: settings.interval, outputsize: settings.outputsize, timezone: 'UTC', order: 'asc' };
+  const key = `history:${JSON.stringify(parameters)}`;
+  const pending = historyPending.get(key);
+  if (pending) return pending;
+  const request = cached<AssetHistory>(key, 60_000, async () => {
+    const payload = await twelveData('/time_series', parameters, apiKey);
+    const meta = payload.meta && typeof payload.meta === 'object' ? payload.meta as Record<string, unknown> : {};
+    if (typeof meta.symbol === 'string' && meta.symbol.toUpperCase() !== asset.symbol.toUpperCase()) throw new Error('El proveedor devolvió otro activo.');
+    const rows = Array.isArray(payload.values) ? payload.values as Array<Record<string, unknown>> : [];
+    const unique = new Map<string, { at: string; price: number }>();
+    for (const row of rows) {
+      const price = number(row.close);
+      const datetime = String(row.datetime ?? '');
+      if (price === undefined || price <= 0 || !/^\d{4}-\d{2}-\d{2}(?: \d{2}:\d{2}:\d{2})?$/.test(datetime)) continue;
+      // Daily bars retain their exchange calendar date; intraday timestamps are explicitly requested in UTC.
+      const at = datetime.length === 10 ? datetime : datetime.replace(' ', 'T') + 'Z';
+      if (!Number.isFinite(Date.parse(at))) continue;
+      unique.set(at, { at, price });
+    }
+    const sorted = [...unique.values()].sort((a, b) => a.at.localeCompare(b.at));
+    const latest = sorted.at(-1);
+    const cutoff = latest ? Date.parse(latest.at) - settings.days * 86400000 : 0;
+    const points = sorted.filter(point => Date.parse(point.at) > cutoff);
+    if (!points.length) throw new Error('El proveedor no dispone de historial para este activo y periodo.');
+    return { ...base, currency: typeof meta.currency === 'string' ? meta.currency : asset.currency, exchange: typeof meta.exchange === 'string' ? meta.exchange : asset.exchange, timezone: base.timezone === 'UTC' ? 'UTC' : String(meta.exchange_timezone ?? 'Exchange'), points, configured: true, source: 'twelve-data', fetchedAt: new Date().toISOString() };
+  });
+  historyPending.set(key, request);
+  try { return await request; } finally { historyPending.delete(key); }
+}
 
 function number(value: unknown) {
   const parsed = typeof value === 'number' ? value : typeof value === 'string' && value.trim() ? Number(value) : NaN;

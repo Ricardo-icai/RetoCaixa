@@ -31,3 +31,9 @@ La proporción 70/30 es un objetivo sujeto al catálogo disponible: nunca se rep
 ## Alcance
 
 Los documentos originales están en docs/. El esquema preparado para PostgreSQL está en `packages/database/prisma/schema.prisma`, pero la demo web todavía usa memoria del servidor: no hay autenticación ni persistencia conectada. Tampoco hay conexión bancaria, feeds de mercado reales o proveedor de IA externo. La verificación documental es solo una transición simulada de estado; no acredita identidades reales. Las publicaciones iniciales y todos los canales están marcados como ejemplos, sin atribuir movimientos ni consejos a inversores reales. Una red pública necesitaría conectar Prisma, un proveedor KYC autorizado, verificación de creadores, moderación, avisos y controles regulatorios. El chat usa un intérprete local limitado y una orquestación determinista; la voz depende del navegador. Los límites del motor son ilustrativos y no constituyen una evaluación completa de idoneidad.
+
+### Historial de activos
+
+Configura `TWELVE_DATA_API_KEY` en `apps/web/.env.local` (solo servidor) y reinicia Next.js para habilitar el historial. No uses un prefijo `NEXT_PUBLIC_` para la clave. Sin credenciales, el gráfico muestra un estado de desconexión y no inventa barras históricas.
+
+`GET /api/market?action=history&symbol=AAPL&exchange=NASDAQ&currency=USD&period=1D` devuelve cierres históricos. Periodos admitidos: `1D` (5 minutos), `1W` (30 minutos), `1M` y `1Y` (diario). Las ventanas terminan en la última barra disponible. La interfaz consulta cada 60 segundos; la caché y agrupación de solicitudes son locales al proceso. La latencia, cobertura, cuotas y autorización de visualización dependen del contrato de Twelve Data; este flujo no es streaming tick a tick. Verificar suscripción y licencias antes de exposición pública. Los errores se muestran sin sustituir datos reales por simulaciones.

@@ -3,6 +3,8 @@
 @tailwind utilities;
 html { color-scheme: dark; background: #020617; }
 body { margin: 0; background: #020617; color: #f1f5f9; }
+html, body, * { scrollbar-width: none; }
+html::-webkit-scrollbar, body::-webkit-scrollbar, *::-webkit-scrollbar { width: 0; height: 0; }
 :focus-visible { outline: 2px solid #34d399; outline-offset: 4px; }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
 

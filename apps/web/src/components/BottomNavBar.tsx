@@ -8,7 +8,7 @@ export function BottomNavBar({ activeTab }: { activeTab: MainTab | null }) {
         const active = activeTab === tab.id;
         return <Link key={tab.id} href={tab.path} aria-current={active ? 'page' : undefined} aria-label={tab.description} className="group relative flex min-w-0 flex-col items-center justify-center gap-1 rounded-2xl focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-4px] focus-visible:outline-emerald-300">
           <span aria-hidden="true" className={`absolute top-1 h-0.5 w-5 rounded-full bg-emerald-300 transition-opacity duration-300 motion-reduce:transition-none ${active ? 'opacity-100' : 'opacity-0'}`} />
-          <img src={tab.icon} alt="" width={40} height={40} draggable={false} className={`h-10 w-10 object-contain transition-all duration-300 ease-in-out motion-reduce:transition-none ${active ? 'scale-110 drop-shadow-[0_0_12px_rgba(52,211,153,0.8)]' : 'opacity-50 grayscale group-hover:grayscale-0 group-hover:opacity-100 group-focus-visible:grayscale-0 group-focus-visible:opacity-100'}`} />
+          <img src={tab.icon} alt="" width={20} height={20} draggable={false} className={`h-5 w-5 object-contain transition-all duration-300 ease-in-out motion-reduce:transition-none ${active ? 'scale-110 drop-shadow-[0_0_12px_rgba(52,211,153,0.8)]' : 'opacity-50 grayscale group-hover:grayscale-0 group-hover:opacity-100 group-focus-visible:grayscale-0 group-focus-visible:opacity-100'}`} />
           <span className={`text-[10px] font-semibold transition-colors duration-300 motion-reduce:transition-none ${active ? 'text-emerald-300' : 'text-slate-400 group-hover:text-slate-200'}`}>{tab.label}</span>
         </Link>;
       })}

@@ -64,7 +64,7 @@ export function ReelVideoFeed({ snapshot, onRefresh }: { snapshot: CommunitySnap
     return () => observer.disconnect();
   }, [ids]);
   return <section aria-label="Reels personalizados" className="mx-auto max-w-xl">
-    <div className="mb-3 flex items-center justify-between gap-3 px-4 text-xs text-slate-400"><p>{snapshot.reelFeed.mode === 'personalized' ? `${snapshot.reelFeed.preview.personalized} para ti · ${snapshot.reelFeed.preview.discovery} para descubrir` : 'Descubre y aprende con KAI'}</p><span>{Math.min(active + 1, snapshot.reels.length)}/{snapshot.reels.length}</span></div>
+    <div className="mb-3 px-4 text-xs text-slate-400"><p>{snapshot.reelFeed.mode === 'personalized' ? `${snapshot.reelFeed.preview.personalized} para ti · ${snapshot.reelFeed.preview.discovery} para descubrir` : 'Descubre y aprende con KAI'}</p></div>
     {notice && <p role="status" className="mb-3 px-4 text-xs text-emerald-200">{notice}</p>}
     <div className="mb-3 flex flex-wrap items-center justify-between gap-3 px-4 text-xs"><a href="/settings#feed-personalization" className="text-slate-400 underline">Preferencias del feed</a>{updates && <button type="button" onClick={() => { setUpdates(false); onRefresh(); }} className="text-emerald-200">Actualizar reels</button>}</div>
     {!snapshot.reels.length && <p className="px-4 py-6 text-sm text-slate-300">No hay reels disponibles con tus preferencias actuales.</p>}

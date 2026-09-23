@@ -33,3 +33,17 @@ export type AssetQuote = AssetSearchResult & {
 };
 
 export type AssetSearchResponse = { results: AssetSearchResult[]; configured: boolean; source: AssetQuote['source'] };
+
+export type ChartPeriod = '1D' | '1W' | '1M' | '1Y';
+export type AssetHistory = {
+  symbol: string;
+  exchange: string;
+  currency: string;
+  period: ChartPeriod;
+  interval: string;
+  timezone: string;
+  points: Array<{ at: string; price: number }>;
+  configured: boolean;
+  source: AssetQuote['source'];
+  fetchedAt: string;
+};

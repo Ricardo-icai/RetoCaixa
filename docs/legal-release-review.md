@@ -104,3 +104,21 @@ Se amplía la interpretación local de objetivos expresados libremente, incluyen
 El cálculo usa estimaciones del usuario, sin asumir rentabilidades, capacidad de gasto verificada ni financiación. No publica estos importes. Se mantienen los controles de incertidumbre, deuda y datos inválidos. Cambiar de objetivo borra supuestos de plazo, precio, ahorro y aportación anteriores. Continúan pendientes las garantías jurídicas y operativas de producción; la interpretación sigue siendo local y acotada, no comprensión universal del lenguaje.
 
 Verificación: conversaciones de compra completas, correcciones, múltiples datos, objetivos alternativos, fechas/plazos e importes, rechazo de hipótesis y ambigüedades, protección por deuda, regresión del chat y recorrido del ejemplo real en Chrome móvil con recarga.
+
+## Historial de activos · 2026-09-23
+
+Función y finalidad: sustituir la línea construida con consultas aisladas por series históricas de cierre de Twelve Data para el símbolo y mercado seleccionados. Periodos de 1 día, 1 semana, 1 mes y 1 año; consultas cada 60 segundos con caché, deduplicación de solicitudes simultáneas y pausa de consultas con la pestaña oculta. El periodo termina en la última barra disponible y la interfaz muestra su fecha, separada de la hora de consulta. Intervalos intradía en UTC; barras diarias conservan la fecha de la bolsa. Sin clave no se genera un historial ficticio. Los fallos de actualización dejan explícito el estado del historial anterior.
+
+Alcance: misma demo educativa y destinatarios existentes; no se habilita comercialización en nuevos países ni ejecución de operaciones financieras reales. Al proveedor existente se envían símbolo, bolsa/MIC, intervalo y parámetros temporales desde el servidor; no se envían perfil, cartera, conversaciones ni identidad del visitante. La clave permanece en el servidor. No se incorporan scripts de terceros, nuevos consentimientos ni cambios en documentos contractuales o versiones aceptadas. Se mantienen los controles y pendientes de menores previamente documentados.
+
+Evidencia técnica: TypeScript y 13 pruebas de mercado/simulación correctas con respuestas controladas del proveedor; cubren ausencia de clave, valores inválidos, fechas, duplicados, orden, caché, concurrencia, errores del proveedor y símbolo equivocado. Las pruebas no acreditan disponibilidad, latencia ni derechos de distribución de un servicio real. No se encontró configuración local de TWELVE_DATA_API_KEY. Responsable técnico: implementación revisada en esta sesión; responsable jurídico pendiente de designación.
+
+Pendientes: clave válida, verificación real de cobertura y cuotas por activo/bolsa, licencias de visualización/redistribución y condiciones comerciales; base jurídica, contratos y transferencias del proveedor conforme al inventario general. No se afirma tiempo real universal ni latencia verificada. Revisión jurídica y operativa por mercado pendiente antes de producción.
+
+Referencias técnicas consultadas: https://twelvedata.com/docs y https://support.twelvedata.com/en/articles/5194610-websocket-faq . El flujo implementado usa REST, no streaming WebSocket.
+
+## Avance directo en configuración de perfil · 2026-09-23
+
+Elegir el objetivo principal o la visibilidad avanza directamente al paso siguiente, sin botón Siguiente. La elección del objetivo pasa a ser única en este alta; Atrás permite corregirla y se conservan los demás campos. La explicación de ambos tipos de visibilidad aparece antes de elegir. El formulario final mantiene confirmación explícita, validación de edad, nacionalidad y casillas separadas sin premarcar. La verificación simulada ya pasa al resultado tras completarse correctamente en el servidor.
+
+Misma demo, países destinatarios, datos y finalidad; sin terceros, mercados u operaciones nuevos. Documentos aceptados y versiones sin cambios. Controles comprobados: 15 pruebas existentes de API de alta, edad y aceptación legal. Revisión jurídica de producción, base jurídica, menores y responsable jurídico continúan pendientes conforme a esta ficha general; responsable técnico: cambio de esta sesión. No se acredita identidad real ni cumplimiento regulatorio.
